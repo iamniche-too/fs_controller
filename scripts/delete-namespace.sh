@@ -1,9 +1,9 @@
 #!/bin/bash
-source ./export-gcp-credentials.sh
-./generate-cluster-connection-yaml.sh
+source ./scripts/export-gcp-credentials.sh
+./scripts/generate-cluster-connection-yaml.s
 
 NAMESPACE=$1
 
-echo "delete namespace " $1
+echo "delete namespace, NAMESPACE="$NAMESPACE
 
 #kubectl delete ns $1 --kubeconfig ./kubeconfig.yaml

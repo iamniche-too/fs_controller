@@ -1,6 +1,8 @@
+#!/bin/bash
+
 export GET_CMD='gcloud container clusters describe gke-kafka-cluster --zone=europe-west2-a'
 
-cat <<EOF > ./kubeconfig.yaml
+cat <<EOF > ./scripts/kubeconfig.yaml
 apiVersion: v1
 kind: Config
 current-context: my-cluster

@@ -7,6 +7,7 @@ PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
 SCRIPT_DIR = "./scripts/"
 
+
 class Controller:
     configurations = []
 
@@ -25,10 +26,8 @@ class Controller:
         # run a script to delete a specific namespace
         directory = SCRIPT_DIR
         filename = "delete-namespace.sh"
-        args = []
-        args[0] = directory + filename
-        args[1] = namespace
-        subprocess.check_call(args)
+        args = [str(directory + filename), namespace]
+        self.bash_command(args)
 
     def teardown_configuration(self, configuration):
         print(f"Teardown configuration: {configuration}")
@@ -41,41 +40,45 @@ class Controller:
 
     def k8s_start_brokers(self, broker_count):
         print(f"k8s_start_brokers, broker_count={broker_count}")
+
         # run a script to start brokers
         directory = SCRIPT_DIR
         filename = "start-brokers.sh"
-        args = []
-        args[0] = directory + filename
-        args[1] = broker_count
-        subprocess.check_call(args)
+        args = [str(directory + filename), broker_count]
+        self.bash_command(args)
 
     def k8s_start_producers(self, message_size):
         print(f"k8s_start_producers, message_size={message_size}")
+
         # run a script to delete a specific namespace
         directory = SCRIPT_DIR
         filename = "start-producers.sh"
-        args = []
-        args[0] = directory + filename
-        args[1] = message_size
-        subprocess.check_call(args)
+        args = [str(directory + filename), message_size]
+        self.bash_command(args)
 
     def setup_configuration(self, configuration):
         print(f"Setup configuration: {configuration}")
 
         # Configure kafka brokers
-        self.k8s_start_brokers(configuration["number_of_brokers"])
+        self.k8s_start_brokers(str(configuration["number_of_brokers"]))
 
         # Start 0 producers with message size
-        self.k8s_start_producers(configuration["message_size_kb"])
+        self.k8s_start_producers(str(configuration["message_size_kb"]))
+
+    def bash_command2(self, additional_args):
+        subprocess.Popen(additional_args, shell=True, executable='/bin/bash')
+
+    def bash_command(self, additional_args):
+        args = ['/bin/bash', '-e'] + additional_args
+        print(args)
+        subprocess.Popen(args)
 
     def k8s_start_producer(self, producer_count):
         # run a script to delete a specific namespace
         directory = "./scripts/"
         filename = "patch-increment-producer.sh"
-        args = []
-        args[0] = directory + filename
-        args[1] = producer_count
-        subprocess.check_call(args)
+        args = [str(directory + filename), producer_count]
+        self.bash_command(args)
 
     def run_configuration(self, configuration):
         print(f"Running configuration: {configuration}")
@@ -83,17 +86,17 @@ class Controller:
         while producer_count < configuration["max_producers"]:
             print(f"Starting producer {producer_count}")
             # Start a new producer
-            self.k8s_start_producer(producer_count)
+            self.k8s_start_producer(str(producer_count))
             producer_count += 1
             time.sleep(5)
 
             print("Reading producer_count queue...")
-            job = self.producer_count_queue.reserve()
-            if job:
-                producer_count = int(job.body)
-                print(f"Producer count={producer_count}")
-                # now remove from the queue
-                self.producer_count_queue.delete(job)
+            # job = self.producer_count_queue.reserve()
+            # if job:
+            #     producer_count = int(job.body)
+            #     print(f"Producer count={producer_count}")
+            #     # now remove from the queue
+            #     self.producer_count_queue.delete(job)
 
             # Wait for a specific time
             producer_increment_interval_sec = configuration["producer_increment_interval_sec"]
@@ -102,11 +105,11 @@ class Controller:
 
         print("Run completed.")
 
-
     def load_configurations(self):
         print("Loading configurations.")
         # TODO - load from file?
-        configuration_0 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3, "producer_increment_interval_sec": 1}
+        configuration_0 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
+                           "producer_increment_interval_sec": 1}
 
         # configuration_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
         #                   "producer_increment_interval_sec": 2}
