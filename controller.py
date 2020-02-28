@@ -39,8 +39,14 @@ class Controller:
     def load_configurations(self):
         print("Loading configurations.")
         # TODO - load from file?
-        configuration_0 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3, "producer_increment_interval_sec": 10}
+        configuration_0 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3, "producer_increment_interval_sec": 1}
+        #configuration_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
+                           "producer_increment_interval_sec": 2}
+        #configuration_2 = {"number_of_brokers": 7, "message_size_kb": 750, "max_producers": 5,
+                           "producer_increment_interval_sec": 1}
         self.configurations.append(configuration_0)
+        #self.configurations.append(configuration_1)
+        #self.configurations.append(configuration_2)
 
 
 if __name__ == '__main__':
