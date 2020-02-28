@@ -65,9 +65,6 @@ class Controller:
         # Start 0 producers with message size
         self.k8s_start_producers(str(configuration["message_size_kb"]))
 
-    def bash_command2(self, additional_args):
-        subprocess.Popen(additional_args, shell=True, executable='/bin/bash')
-
     def bash_command(self, additional_args):
         args = ['/bin/bash', '-e'] + additional_args
         print(args)
@@ -91,12 +88,12 @@ class Controller:
             time.sleep(5)
 
             print("Reading producer_count queue...")
-            # job = self.producer_count_queue.reserve()
-            # if job:
-            #     producer_count = int(job.body)
-            #     print(f"Producer count={producer_count}")
-            #     # now remove from the queue
-            #     self.producer_count_queue.delete(job)
+            job = self.producer_count_queue.reserve()
+            if job:
+                 producer_count = int(job.body)
+                 print(f"Producer count={producer_count}")
+                 # now remove from the queue
+                 self.producer_count_queue.delete(job)
 
             # Wait for a specific time
             producer_increment_interval_sec = configuration["producer_increment_interval_sec"]

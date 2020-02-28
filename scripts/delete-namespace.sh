@@ -4,6 +4,6 @@ source ./scripts/export-gcp-credentials.sh
 
 NAMESPACE=$1
 
-echo "delete namespace, NAMESPACE="$NAMESPACE
+echo "delete namespace, NAMESPACE=$NAMESPACE"
 
-#kubectl delete ns $1 --kubeconfig ./kubeconfig.yaml
+kubectl delete ns $1 --kubeconfig ./kubeconfig.yaml
