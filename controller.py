@@ -1,7 +1,6 @@
 import subprocess
 import time
 import greenstalk
-import kubernetes
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"

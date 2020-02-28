@@ -8,7 +8,6 @@ verify_ssl = true
 [packages]
 python-dateutil = "*"
 pandas = "*"
-kubernetes = "*"
 # client for beanstalkd
 greenstalk = "*"
  
