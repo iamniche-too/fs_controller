@@ -58,10 +58,10 @@ class Controller:
     def setup_configuration(self, configuration):
         print(f"Setup configuration: {configuration}")
 
-        # Configure kafka brokers
+        # Configure # kafka brokers
         self.k8s_start_brokers(str(configuration["number_of_brokers"]))
 
-        # Start 0 producers with message size
+        # Configure producers with required message size
         self.k8s_start_producers(str(configuration["message_size_kb"]))
 
     def bash_command(self, additional_args):
@@ -76,6 +76,15 @@ class Controller:
         args = [str(directory + filename), producer_count]
         self.bash_command(args)
 
+    # TODO - rewrite function to get producer count from K8S
+    def get_producer_count(self):
+        job = self.producer_count_queue.reserve()
+        reported_producer_count = int(job.body)
+        print(f"Reported producer count={reported_producer_count}")
+        # now remove from the queue
+        self.producer_count_queue.delete(job)
+        return reported_producer_count
+
     def run_configuration(self, configuration):
         print(f"Running configuration: {configuration}")
         producer_count = 0
@@ -87,12 +96,10 @@ class Controller:
             time.sleep(5)
 
             print("Reading producer_count queue...")
-            job = self.producer_count_queue.reserve()
-            if job:
-                 producer_count = int(job.body)
-                 print(f"Producer count={producer_count}")
-                 # now remove from the queue
-                 self.producer_count_queue.delete(job)
+            reported_producer_count = self.get_producer_count()
+
+            if reported_producer_count != producer_count:
+                print("Error: unexpected reported # of producers running...")
 
             # Wait for a specific time
             producer_increment_interval_sec = configuration["producer_increment_interval_sec"]
