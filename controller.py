@@ -68,6 +68,9 @@ class Controller:
     def check_brokers(self, expected_broker_count):
         return self.get_broker_count() == expected_broker_count
 
+    def check_producers(self, expected_producer_count):
+        return self.get_producer_count() == expected_producer_count
+
     def setup_configuration(self, configuration):
         print(f"Setup configuration: {configuration}")
 
@@ -128,24 +131,30 @@ class Controller:
 
     def run_configuration(self, configuration):
         print(f"Running configuration: {configuration}")
-        producer_count = 1
-        while producer_count <= configuration["max_producers"]:
-            print(f"Starting producer {producer_count}")
+        desired_producer_count = 1
+        while desired_producer_count <= configuration["max_producers"]:
+            print(f"Starting producer {desired_producer_count}")
             # Start a new producer
-            self.k8s_scale_producers(str(producer_count))
-            producer_count += 1
-            time.sleep(5)
+            self.k8s_scale_producers(str(desired_producer_count))
 
-            reported_producer_count = self.get_producer_count()
+            time.sleep(10)
 
-            if reported_producer_count != producer_count:
-                print("Error: unexpected reported # of producers running...")
-                exit()
+            i = 0
+            check_producers = self.check_producers(desired_producer_count)
+            while not check_producers:
+                time.sleep(10)
+                check_brokers = self.check_producers(desired_producer_count)
+                print("(Still) waiting for producers to start...")
+                i += 1
+                if i > 3:
+                    print("Error: unexpected # of producers running...")
+                    exit()
 
             # Wait for a specific time
             producer_increment_interval_sec = configuration["producer_increment_interval_sec"]
-            print(f"Waiting {producer_increment_interval_sec} seconds.")
+            print(f"Waiting for {producer_increment_interval_sec} seconds.")
             time.sleep(producer_increment_interval_sec)
+            desired_producer_count += 1
 
         print("Run completed.")
 
@@ -153,7 +162,7 @@ class Controller:
         print("Loading configurations.")
         # TODO - load from file?
         configuration_0 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
-                           "producer_increment_interval_sec": 20}
+                           "producer_increment_interval_sec": 30}
 
         # configuration_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
         #                   "producer_increment_interval_sec": 20}
