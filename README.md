@@ -6,10 +6,14 @@ Steps to set-up the controller:
 
 ```shell
 sudo apt-get install beanstalkd
-./beanstalkd -l 127.0.0.1 -p 12000
+beanstalkd -l 127.0.0.1 -p 12000
 ```
 
 ```shell
 pipenv shell
 pipenv install --dev
+```
+
+```shell
+./run.sh
 ```
