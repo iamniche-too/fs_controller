@@ -55,17 +55,18 @@ class Controller:
         directory = SCRIPT_DIR
         filename = "get-brokers-count.sh"
         args = [str(directory + filename)]
-        broker_count = int(self.bash_command_with_output(args))
+
+        broker_count = 0
+        try:
+            broker_count = int(self.bash_command_with_output(args))
+        except ValueError:
+            pass
+
         print(f"broker_count={broker_count}")
         return broker_count
 
-    def brokers_all_running(self, expected_broker_count):
-        brokers_all_running = False
-
-        if self.get_broker_count() == expected_broker_count:
-            brokers_all_running = True
-
-        return brokers_all_running
+    def check_brokers(self, expected_broker_count):
+        return self.get_broker_count() == expected_broker_count
 
     def setup_configuration(self, configuration):
         print(f"Setup configuration: {configuration}")
@@ -73,13 +74,22 @@ class Controller:
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
 
-        # TODO - wait until the brokers are all running
         print("Waiting for brokers to start...")
-        while self.brokers_all_running(configuration["number_of_brokers"]):
-            time.sleep(5)
+        i = 0
+        check_brokers = self.check_brokers(configuration["number_of_brokers"])
+        while not check_brokers:
+            time.sleep(20)
+            check_brokers = self.check_brokers(configuration["number_of_brokers"])
             print("(Still) waiting for brokers to start...")
+            i += 1
+            if i > 6:
+                print("Error: unexpected # of brokers running...")
+                exit()
 
         print("Brokers started ok.")
+
+        # wait for things to settle...
+        time.sleep(10)
 
         # Configure producers with required message size
         self.k8s_configure_producers(str(configuration["message_size_kb"]))
@@ -106,14 +116,20 @@ class Controller:
         directory = "./scripts/"
         filename = "get-producers-count.sh"
         args = [str(directory + filename)]
-        producer_count = int(self.bash_command_with_output(args))
+
+        producer_count = 0
+        try:
+            producer_count = int(self.bash_command_with_output(args))
+        except ValueError:
+            pass
+
         print(f"reported_producer_count={producer_count}")
         return producer_count
 
     def run_configuration(self, configuration):
         print(f"Running configuration: {configuration}")
-        producer_count = 0
-        while producer_count < configuration["max_producers"]:
+        producer_count = 1
+        while producer_count <= configuration["max_producers"]:
             print(f"Starting producer {producer_count}")
             # Start a new producer
             self.k8s_scale_producers(str(producer_count))
@@ -124,6 +140,7 @@ class Controller:
 
             if reported_producer_count != producer_count:
                 print("Error: unexpected reported # of producers running...")
+                exit()
 
             # Wait for a specific time
             producer_increment_interval_sec = configuration["producer_increment_interval_sec"]
@@ -148,6 +165,7 @@ class Controller:
         # self.configurations.append(configuration_2)
 
 
+# GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
     c = Controller()
     c.run()
