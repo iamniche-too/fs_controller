@@ -14,6 +14,7 @@ class Controller:
 
     def run(self):
         self.load_configurations()
+        self.provision_node_pool()
 
         for configuration in self.configurations:
             self.setup_configuration(configuration)
@@ -104,6 +105,14 @@ class Controller:
         out = p.communicate()[0].decode("UTF-8")
         return out
 
+    def bash_command_with_wait(self, additional_args):
+        args = ['/bin/bash', '-e'] + additional_args
+        print(args)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE)
+        p.wait()
+        out = p.communicate()[0].decode("UTF-8")
+        return out
+
     def bash_command_no_output(self, additional_args):
         args = ['/bin/bash', '-e'] + additional_args
         print(args)
@@ -162,7 +171,7 @@ class Controller:
         print("Loading configurations.")
         # TODO - load from file?
         configuration_0 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
-                           "producer_increment_interval_sec": 30}
+                           "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard"}
 
         # configuration_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
         #                   "producer_increment_interval_sec": 20}
@@ -173,6 +182,21 @@ class Controller:
         # self.configurations.append(configuration_1)
         # self.configurations.append(configuration_2)
 
+    def provision_node_pool(self, configuration):
+        print(f"Provisioning node pool: {configuration}")
+        directory = "./terraform/"
+        filename = "provision.sh"
+        args = [str(directory + filename), configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
+        self.bash_command_with_wait(args)
+        print("Node pool provisioned.")
+
+    def unprovision_node_pool(self):
+        print("Unprovisioning node pool.")
+        directory = "./terraform/"
+        filename = "unprovision.sh"
+        args = [str(directory + filename)]
+        self.bash_command_with_wait(args)
+        print("Node pool unprovisioned.")
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':

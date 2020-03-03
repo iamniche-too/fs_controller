@@ -29,3 +29,9 @@ class TestController(unittest.TestCase):
         print(f"producer_count={producer_count}")
         self.assertEqual(1, producer_count)
 
+    def test_provision_node_pool(self):
+        configuration = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
+                       "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100,
+                       "disk_type": "pd-standard"}
+        self.controller.provision_node_pool(configuration)
+        self.controller.unprovision_node_pool()
