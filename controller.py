@@ -113,10 +113,11 @@ class Controller:
     def bash_command_with_wait(self, additional_args):
         args = ['/bin/bash', '-e'] + additional_args
         print(args)
-        p = subprocess.Popen(args, stdout=subprocess.PIPE)
-        p.wait()
-        out = p.communicate()[0].decode("UTF-8")
-        return out
+        try:
+            subprocess.check_call(args, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError:
+            # There was an error - command exited with non-zero code
+            exit()
 
     def bash_command_no_output(self, additional_args):
         args = ['/bin/bash', '-e'] + additional_args
@@ -235,10 +236,17 @@ class Controller:
 
     def provision_node_pool(self, configuration):
         print(f"1. Provisioning node pool: {configuration}")
+
         directory = "./terraform/"
-        filename = "provision.sh"
+        filename = "generate-kafka-node-pool.sh"
         args = [str(directory + filename), configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
         self.bash_command_with_wait(args)
+
+        directory = "./terraform/"
+        filename = "provision.sh"
+        args = [str(directory + filename)]
+        self.bash_command_with_wait(args)
+
         print("Node pool provisioned.")
 
     def unprovision_node_pool(self, configuration):
