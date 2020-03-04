@@ -1,11 +1,15 @@
 import subprocess
 import time
 import greenstalk
+import threading
+from statistics import mean
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
 SCRIPT_DIR = "./scripts/"
 
+DEFAULT_CONSUMER_TOLERANCE = 0.9
+DEFAULT_THROUGHPUT_MB_S = 75
 
 class Controller:
     configurations = []
@@ -14,12 +18,13 @@ class Controller:
 
     def run(self):
         self.load_configurations()
-        self.provision_node_pool()
 
         for configuration in self.configurations:
+            self.provision_node_pool(configuration)
             self.setup_configuration(configuration)
             self.run_configuration(configuration)
             self.teardown_configuration(configuration)
+            self.unprovision_node_pool(configuration)
 
     def k8s_delete_namespace(self, namespace):
         # run a script to delete a specific namespace
@@ -29,7 +34,7 @@ class Controller:
         self.bash_command_no_output(args)
 
     def teardown_configuration(self, configuration):
-        print(f"Teardown configuration: {configuration}")
+        print(f"4. Teardown configuration: {configuration}")
 
         # Remove producers & consumers
         self.k8s_delete_namespace(PRODUCER_CONSUMER_NAMESPACE)
@@ -73,7 +78,7 @@ class Controller:
         return self.get_producer_count() == expected_producer_count
 
     def setup_configuration(self, configuration):
-        print(f"Setup configuration: {configuration}")
+        print(f"2. Setup configuration: {configuration}")
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
@@ -87,7 +92,7 @@ class Controller:
             print("(Still) waiting for brokers to start...")
             i += 1
             if i > 6:
-                print("Error: unexpected # of brokers running...")
+                print("Error: Timeout waiting for brokers to start.")
                 exit()
 
         print("Brokers started ok.")
@@ -138,60 +143,106 @@ class Controller:
         print(f"reported_producer_count={producer_count}")
         return producer_count
 
-    def run_configuration(self, configuration):
-        print(f"Running configuration: {configuration}")
-        desired_producer_count = 1
-        while desired_producer_count <= configuration["max_producers"]:
-            print(f"Starting producer {desired_producer_count}")
+    def increment_producers_thread(self, configuration):
+        actual_producer_count = 1
+        while actual_producer_count <= configuration["max_producers"]:
+            print(f"Starting producer {actual_producer_count}")
             # Start a new producer
-            self.k8s_scale_producers(str(desired_producer_count))
+            self.k8s_scale_producers(str(actual_producer_count))
 
             time.sleep(10)
 
             i = 0
-            check_producers = self.check_producers(desired_producer_count)
+            check_producers = self.check_producers(actual_producer_count)
             while not check_producers:
-                time.sleep(10)
-                check_brokers = self.check_producers(desired_producer_count)
-                print("(Still) waiting for producers to start...")
+                time.sleep(1)
+                check_brokers = self.check_producers(actual_producer_count)
+                print("(Still) waiting for producer to start...")
                 i += 1
                 if i > 3:
-                    print("Error: unexpected # of producers running...")
+                    print("Error: Timeout waiting for producer to start...")
                     exit()
 
-            # Wait for a specific time
+            # Wait for a specified interval before starting the next producer
             producer_increment_interval_sec = configuration["producer_increment_interval_sec"]
-            print(f"Waiting for {producer_increment_interval_sec} seconds.")
+            print(f"Waiting {producer_increment_interval_sec}s before starting next producer.")
             time.sleep(producer_increment_interval_sec)
-            desired_producer_count += 1
 
-        print("Run completed.")
+            actual_producer_count += 1
+
+    def check_consumer_throughput(self, configuration):
+        throughput_list = []
+
+        done = False
+
+        while done is False:
+            print(f"Checking consumer throughput queue...")
+
+            try:
+                job = self.consumer_throughput_queue.reserve(timeout=5)
+                consumer_throughput = float(job.body)
+
+                # append to the list
+                throughput_list.append(consumer_throughput)
+
+                if len(throughput_list) >= 3:
+                    # truncate list to last 3 entries
+                    throughput_list = throughput_list[-3:]
+
+                    consumer_throughput_average = mean(throughput_list)
+                    print(f"Consumer throughput (average) = {consumer_throughput_average}")
+
+                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * (configuration["consumer_tolerance"] or DEFAULT_CONSUMER_TOLERANCE))
+                    if consumer_throughput_average < consumer_throughput_tolerance:
+                        print(f"Consumer throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance})")
+
+                    done = True
+
+                # Finally delete from queue
+                self.consumer_throughput_queue.delete(job)
+
+            except greenstalk.TimedOutError:
+                print("Warning: nothing in consumer throughput queue.")
+
+            time.sleep(int(configuration["consumer_throughput_reporting_interval"] or 5))
+
+    def run_configuration(self, configuration):
+        print(f"3. Running configuration: {configuration}")
+
+        thread1 = threading.Thread(target=self.increment_producers_thread, args=(configuration,))
+        thread2 = threading.Thread(target=self.check_consumer_throughput, args=(configuration,))
+
+        thread2.start()
+        thread1.start()
+        thread1.join()
+        # no need to wait for second thread to finish
+        # thread2.join()
+
+        print(f"Run completed for configuration {configuration}")
 
     def load_configurations(self):
         print("Loading configurations.")
-        # TODO - load from file?
-        configuration_0 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
+
+        configuration_3_750_n1_standard_1 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
                            "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard"}
 
-        # configuration_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
-        #                   "producer_increment_interval_sec": 20}
-        # configuration_2 = {"number_of_brokers": 7, "message_size_kb": 750, "max_producers": 5,
-        #                  "producer_increment_interval_sec": 10}
+        configuration_5_750_n1_standard_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
+                           "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100,
+                           "disk_type": "pd-standard"}
 
-        self.configurations.append(configuration_0)
-        # self.configurations.append(configuration_1)
-        # self.configurations.append(configuration_2)
+        self.configurations.append(configuration_3_750_n1_standard_1)
+        self.configurations.append(configuration_5_750_n1_standard_1)
 
     def provision_node_pool(self, configuration):
-        print(f"Provisioning node pool: {configuration}")
+        print(f"1. Provisioning node pool: {configuration}")
         directory = "./terraform/"
         filename = "provision.sh"
         args = [str(directory + filename), configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
         self.bash_command_with_wait(args)
         print("Node pool provisioned.")
 
-    def unprovision_node_pool(self):
-        print("Unprovisioning node pool.")
+    def unprovision_node_pool(self, configuration):
+        print(f"5. Unprovisioning node pool: {configuration}")
         directory = "./terraform/"
         filename = "unprovision.sh"
         args = [str(directory + filename)]
