@@ -24,18 +24,21 @@ class MockQueuePusher:
             f"[MockQueuePusher] Pushing to consumer_through_put_queue every {post_interval}s, with degradation after_{degraded_after_interval}s")
         iterations = degraded_after_interval / post_interval
 
-        i = 0
-        while i < iterations:
-            print(f"[MockQueuePusher] Pushing normal throughput to queue")
-            self.consumer_throughput_queue.put(str(DEFAULT_THROUGHPUT_MB_S))
-            time.sleep(post_interval)
-            i += 1
-
-        below_tolerance = DEFAULT_THROUGHPUT_MB_S * (DEFAULT_CONSUMER_TOLERANCE - 0.1)
         while True:
-            print(f"[MockQueuePusher] Pushing degradation to queue {below_tolerance}")
-            self.consumer_throughput_queue.put(str(below_tolerance))
-            time.sleep(post_interval)
+            i = 0
+            while i < iterations:
+                print(f"[MockQueuePusher] Pushing normal throughput to queue {DEFAULT_THROUGHPUT_MB_S}")
+                self.consumer_throughput_queue.put(str(DEFAULT_THROUGHPUT_MB_S))
+                time.sleep(post_interval)
+                i += 1
+
+            below_tolerance = DEFAULT_THROUGHPUT_MB_S * (DEFAULT_CONSUMER_TOLERANCE - 0.1)
+            j = 0
+            while j <= 2:
+                print(f"[MockQueuePusher] Pushing degradation to queue {below_tolerance}")
+                self.consumer_throughput_queue.put(str(below_tolerance))
+                time.sleep(post_interval)
+                j += 1
 
 
 class MockQueuePoller:
@@ -79,8 +82,8 @@ class MockQueuePoller:
 # see https://stackoverflow.com/questions/19846332/python-threading-inside-a-class/19846691
 if __name__ == '__main__':
     c = MockQueuePusher()
-    d = MockQueuePoller()
+    #d = MockQueuePoller()
     handle1 = c.run(5, 15)
-    handle2 = d.run(5)
+    #handle2 = d.run(5)
     handle1.join()
-    handle2.join()
+    #handle2.join()
