@@ -14,6 +14,11 @@ class TestController(unittest.TestCase):
         pass
 
     # IMPORTANT: set ENV var GOOGLE_APPLICATION_CREDENTIALS=~/.gcp/kafka-k8s-trial-4287e941a38f.json
+    def test_check_k8s(self):
+        is_ok = self.controller.check_k8s()
+        self.assertEqual(True, is_ok)
+
+    # IMPORTANT: set ENV var GOOGLE_APPLICATION_CREDENTIALS=~/.gcp/kafka-k8s-trial-4287e941a38f.json
     def test_scale_brokers(self):
         self.controller.k8s_scale_brokers(3)
         time.sleep(20)

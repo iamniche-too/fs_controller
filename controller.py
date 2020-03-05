@@ -4,6 +4,8 @@ import greenstalk
 import threading
 from statistics import mean
 
+K8S_SERVICE_COUNT = 23
+
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
 SCRIPT_DIR = "./scripts"
@@ -78,13 +80,24 @@ class Controller:
         # run a script to start brokers
         filename = "./scale-brokers.sh"
         args = [filename, str(broker_count)]
-        self.bash_command_no_output(args, SCRIPT_DIR)
+        self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_configure_producers(self, message_size):
         print(f"k8s_configure_producers, message_size={message_size}")
         filename = "./configure-producers.sh"
         args = [filename, str(message_size)]
-        self.bash_command_no_output(args, SCRIPT_DIR)
+        self.bash_command_with_wait(args, SCRIPT_DIR)
+
+    def check_k8s(self):
+        print(f"check_k8s")
+        filename = "./check_k8s.sh"
+        args = [filename]
+        output = self.bash_command_with_output(args, SCRIPT_DIR)
+        service_count = int(output)
+        if service_count == K8S_SERVICE_COUNT:
+            return True
+        else:
+            return False
 
     def get_broker_count(self):
         filename = "./get-brokers-count.sh"
@@ -108,10 +121,10 @@ class Controller:
     def check_brokers_ok(self, configuration):
         print("Waiting for brokers to start...")
         i = 1
-        attempts = 5
+        attempts = 10
         check_brokers = self.check_brokers(configuration["number_of_brokers"])
         while not check_brokers:
-            time.sleep(5)
+            time.sleep(20)
 
             check_brokers = self.check_brokers(configuration["number_of_brokers"])
             print("(Still) waiting for brokers to start...")
@@ -128,7 +141,7 @@ class Controller:
         print(f"configure_gcloud, cluster_name={cluster_name}, cluster_zone={cluster_zone}")
         filename = "./configure-gcloud.sh"
         args = [filename, cluster_name, cluster_zone]
-        self.bash_command_no_output(args, SCRIPT_DIR)
+        self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def setup_configuration(self, configuration):
         print(f"2. Setup configuration: {configuration}")
@@ -136,21 +149,30 @@ class Controller:
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
+        # check K8s
+        all_ok = self.check_k8s()
+        if not all_ok:
+            print("Aborting configuration - k8s services not ok.")
+            return False
+
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
 
         all_ok = self.check_brokers_ok(configuration)
+        if not all_ok:
+            print("Aborting configuration - brokers not ok.")
+            return False
 
-        if all_ok:
-            # Configure producers with required message size
-            self.k8s_configure_producers(str(configuration["message_size_kb"]))
+        # Configure producers with required message size
+        self.k8s_configure_producers(str(configuration["message_size_kb"]))
 
-        return all_ok
+        return True
 
     def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
         print(args)
         p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
+        p.wait()
         out = p.communicate()[0].decode("UTF-8")
         return out
 
@@ -159,14 +181,12 @@ class Controller:
         print(args)
         try:
             subprocess.check_call(args, stderr=subprocess.STDOUT, cwd=working_directory)
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as e:
             # There was an error - command exited with non-zero code
-            exit()
+            print(e.output)
+            return False
 
-    def bash_command_no_output(self, additional_args, working_directory):
-        args = ['/bin/bash', '-e'] + additional_args
-        print(args)
-        subprocess.Popen(args, cwd=working_directory)
+        return True
 
     def k8s_scale_producers(self, producer_count):
         filename = "./scale-producers.sh"
@@ -298,6 +318,6 @@ class Controller:
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
-    # service_account_email = input(“Please enter a service account email“) or SERVICE_ACCOUNT_EMAIL
+    input("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
     c = Controller()
     c.run()
