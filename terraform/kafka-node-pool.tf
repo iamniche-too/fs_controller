@@ -38,7 +38,7 @@ resource "google_container_node_pool" "kafka_node_pool" {
     # n1-standard-1.
     machine_type = "n1-standard-1"
 
-    service_account = "cluster-minimal-4752c47e1515@kafka-k8s-trial.iam.gserviceaccount.com" 
+    service_account = "cluster-minimal-494cd3e041ed@kafka-k8s-trial.iam.gserviceaccount.com" 
 
     # Size of the disk attached to each node, specified in GB. The smallest
     # allowed disk size is 10GB. Defaults to 100GB.

@@ -4,17 +4,20 @@ import greenstalk
 import threading
 from statistics import mean
 
-K8S_SERVICE_COUNT = 23
+K8S_SERVICE_COUNT = 28
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
 SCRIPT_DIR = "./scripts"
 TERRAFORM_DIR = "./terraform/"
 
+# set this to where-ever fs-kafka-k8s is cloned
+KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s"
+
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-4752c47e1515@kafka-k8s-trial.iam.gserviceaccount.com"
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-494cd3e041ed@kafka-k8s-trial.iam.gserviceaccount.com"
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
 
@@ -53,9 +56,15 @@ class Controller:
 
         done = False
         while not done:
-            job = self.consumer_throughput_queue.reserve(timeout=0)
+            job = None
+            try:
+                job = self.consumer_throughput_queue.reserve(timeout=0)
+            except greenstalk.TimedOutError:
+                pass
+
             if job is None:
                 done = True
+
             self.consumer_throughput_queue.delete(job)
 
         print("Consumer throughput queue flushed.")
@@ -74,6 +83,13 @@ class Controller:
 
         # take down the kafka node pool
         self.unprovision_node_pool(configuration)
+
+    # run a script to deploy kafka
+    def k8s_deploy_kafka(self):
+        print(f"k8s_deploy_kafka")
+        filename = "./deploy.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     def k8s_scale_brokers(self, broker_count):
         print(f"k8s_scale_brokers, broker_count={broker_count}")
@@ -94,7 +110,7 @@ class Controller:
         args = [filename]
         output = self.bash_command_with_output(args, SCRIPT_DIR)
         service_count = int(output)
-        if service_count == K8S_SERVICE_COUNT:
+        if service_count < K8S_SERVICE_COUNT:
             return True
         else:
             return False
@@ -154,6 +170,9 @@ class Controller:
         if not all_ok:
             print("Aborting configuration - k8s services not ok.")
             return False
+
+        # deploy kafka
+        self.k8s_deploy_kafka()
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
@@ -318,6 +337,6 @@ class Controller:
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
-    input("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
+    print("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
     c = Controller()
     c.run()
