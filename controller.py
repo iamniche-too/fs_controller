@@ -30,6 +30,8 @@ class Controller:
         self.load_configurations()
 
         for configuration in self.configurations:
+            print("\r\nTrying next configuration...")
+
             self.provision_node_pool(configuration)
 
             # only run if everything is ok
@@ -70,7 +72,7 @@ class Controller:
         print("Consumer throughput queue flushed.")
 
     def teardown_configuration(self, configuration):
-        print(f"4. Teardown configuration: {configuration}")
+        print(f"\r\n4. Teardown configuration: {configuration}")
 
         # Remove producers & consumers
         self.k8s_delete_namespace(PRODUCER_CONSUMER_NAMESPACE)
@@ -161,7 +163,7 @@ class Controller:
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def setup_configuration(self, configuration):
-        print(f"2. Setup configuration: {configuration}")
+        print(f"\r\n2. Setup configuration: {configuration}")
 
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
@@ -290,7 +292,7 @@ class Controller:
             time.sleep(int(configuration["consumer_throughput_reporting_interval"] or 5))
 
     def run_configuration(self, configuration):
-        print(f"3. Running configuration: {configuration}")
+        print(f"\r\n3. Running configuration: {configuration}")
 
         thread1 = threading.Thread(target=self.increment_producers_thread, args=(configuration,))
         thread2 = threading.Thread(target=self.check_consumer_throughput, args=(configuration,))
@@ -317,7 +319,7 @@ class Controller:
         self.configurations.append(configuration_3_750_n1_standard_1)
 
     def provision_node_pool(self, configuration):
-        print(f"1. Provisioning node pool: {configuration}")
+        print(f"\r\n1. Provisioning node pool: {configuration}")
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
@@ -330,7 +332,7 @@ class Controller:
         print("Node pool provisioned.")
 
     def unprovision_node_pool(self, configuration):
-        print(f"5. Unprovisioning node pool: {configuration}")
+        print(f"\r\n5. Unprovisioning node pool: {configuration}")
         filename = "./unprovision.sh"
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
