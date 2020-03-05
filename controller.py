@@ -289,9 +289,9 @@ class Controller:
                     consumer_throughput_average = mean(throughput_list)
                     print(f"Consumer throughput (average) = {consumer_throughput_average}")
 
-                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * (configuration["consumer_tolerance"] or DEFAULT_CONSUMER_TOLERANCE))
+                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * DEFAULT_CONSUMER_TOLERANCE)
                     if consumer_throughput_average < consumer_throughput_tolerance:
-                        print(f"Consumer throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance})")
+                        print(f"Consumer throughput average {consumer_throughput_average} is below tolerance {DEFAULT_THROUGHPUT_MB_S * DEFAULT_CONSUMER_TOLERANCE})")
 
                     done = True
 
@@ -307,10 +307,12 @@ class Controller:
         print(f"\r\n3. Running configuration: {configuration}")
 
         thread1 = threading.Thread(target=self.increment_producers_thread, args=(configuration,))
-        thread2 = threading.Thread(target=self.check_consumer_throughput, args=(configuration,))
-
-        thread2.start()
         thread1.start()
+        time.sleep(5)
+
+        thread2 = threading.Thread(target=self.check_consumer_throughput, args=(configuration,))
+        thread2.start()
+
         thread1.join()
         # no need to wait for second thread to finish
         # thread2.join()
