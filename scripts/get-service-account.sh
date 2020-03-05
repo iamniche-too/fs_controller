@@ -1,2 +1,2 @@
 #!/bin/bash
-kubectl get serviceaccounts -o json --kubeconfig=./scripts/kubeconfig.yaml > out.json
+kubectl get serviceaccounts -o json --kubeconfig=./kubeconfig.yaml > out.json

@@ -12,7 +12,7 @@ TERRAFORM_DIR = "./terraform/"
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-e8bb921d9b59@kafka-k8s-trial.iam.gserviceaccount.com"
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-4752c47e1515@kafka-k8s-trial.iam.gserviceaccount.com"
 
 class Controller:
     configurations = []
@@ -24,10 +24,13 @@ class Controller:
 
         for configuration in self.configurations:
             self.provision_node_pool(configuration)
-            self.setup_configuration(configuration)
-            self.run_configuration(configuration)
-            self.teardown_configuration(configuration)
-            self.unprovision_node_pool(configuration)
+
+            # only run if everything is ok
+            if self.setup_configuration(configuration):
+                self.run_configuration(configuration)
+
+        # now teardown and unprovision
+        self.teardown_configuration(configuration)
 
     def k8s_delete_namespace(self, namespace):
         print(f"Deleting namespace: {namespace}")
@@ -64,6 +67,9 @@ class Controller:
         # flush the consumer throughput queue
         self.flush_consumer_throughput_queue()
 
+        # take down the kafka node pool
+        self.unprovision_node_pool(configuration)
+
     def k8s_scale_brokers(self, broker_count):
         print(f"k8s_scale_brokers, broker_count={broker_count}")
         # run a script to start brokers
@@ -96,31 +102,36 @@ class Controller:
     def check_producers(self, expected_producer_count):
         return self.get_producer_count() == expected_producer_count
 
+    def check_brokers_ok(self, configuration):
+        print("Waiting for brokers to start...")
+        i = 0
+        check_brokers = self.check_brokers(configuration["number_of_brokers"])
+        while not check_brokers:
+            time.sleep(20)
+
+            check_brokers = self.check_brokers(configuration["number_of_brokers"])
+            print("(Still) waiting for brokers to start...")
+            i += 1
+            if i > 6:
+                print("Error: Timeout waiting for brokers to start.")
+                return False
+
+        print("Brokers started ok.")
+        return True
+
     def setup_configuration(self, configuration):
         print(f"2. Setup configuration: {configuration}")
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
 
-        print("Waiting for brokers to start...")
-        i = 0
-        check_brokers = self.check_brokers(configuration["number_of_brokers"])
-        while not check_brokers:
-            time.sleep(20)
-            check_brokers = self.check_brokers(configuration["number_of_brokers"])
-            print("(Still) waiting for brokers to start...")
-            i += 1
-            if i > 6:
-                print("Error: Timeout waiting for brokers to start.")
-                exit()
+        all_ok = self.check_brokers_ok(configuration)
 
-        print("Brokers started ok.")
+        if all_ok:
+            # Configure producers with required message size
+            self.k8s_configure_producers(str(configuration["message_size_kb"]))
 
-        # wait for things to settle...
-        time.sleep(10)
-
-        # Configure producers with required message size
-        self.k8s_configure_producers(str(configuration["message_size_kb"]))
+        return all_ok
 
     def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
@@ -244,12 +255,12 @@ class Controller:
         configuration_3_750_n1_standard_1 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
                            "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard"}
 
-        configuration_5_750_n1_standard_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
-                           "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100,
-                           "disk_type": "pd-standard"}
+        # configuration_5_750_n1_standard_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
+        #                   "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100,
+        #                   "disk_type": "pd-standard"}
 
         self.configurations.append(configuration_3_750_n1_standard_1)
-        self.configurations.append(configuration_5_750_n1_standard_1)
+        self.configurations.append(configuration_3_750_n1_standard_1)
 
     def provision_node_pool(self, configuration):
         print(f"1. Provisioning node pool: {configuration}")

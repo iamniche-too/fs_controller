@@ -3,7 +3,7 @@ MESSAGE_SIZE_KB=$1
 
 echo "start producers, MESSAGE_SIZE_KB=$MESSAGE_SIZE_KB"
 
-kubectl -n producer-consumers apply -f - --kubeconfig ./scripts/kubeconfig.yaml<<EOF
+kubectl -n producer-consumers apply -f - --kubeconfig ./kubeconfig.yaml<<EOF
 template:
     metadata:
       labels:
