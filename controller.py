@@ -66,8 +66,8 @@ class Controller:
 
             if job is None:
                 done = True
-
-            self.consumer_throughput_queue.delete(job)
+            else:
+                self.consumer_throughput_queue.delete(job)
 
         print("Consumer throughput queue flushed.")
 
@@ -114,9 +114,9 @@ class Controller:
         service_count = int(output)
         print(f"k8s service count={service_count}")
         if service_count < K8S_SERVICE_COUNT:
-            return True
-        else:
             return False
+        else:
+            return True
 
     def get_broker_count(self):
         filename = "./get-brokers-count.sh"
