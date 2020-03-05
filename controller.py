@@ -67,17 +67,15 @@ class Controller:
     def k8s_scale_brokers(self, broker_count):
         print(f"k8s_scale_brokers, broker_count={broker_count}")
         # run a script to start brokers
-        directory = SCRIPT_DIR
-        filename = "scale-brokers.sh"
-        args = [str(directory + filename), str(broker_count)]
-        self.bash_command_no_output(args)
+        filename = "./scale-brokers.sh"
+        args = [filename, str(broker_count)]
+        self.bash_command_no_output(args, SCRIPT_DIR)
 
     def k8s_configure_producers(self, message_size):
         print(f"k8s_configure_producers, message_size={message_size}")
-        directory = SCRIPT_DIR
-        filename = "configure-producers.sh"
-        args = [str(directory + filename), str(message_size)]
-        self.bash_command_no_output(args)
+        filename = "./configure-producers.sh"
+        args = [filename, str(message_size)]
+        self.bash_command_no_output(args, SCRIPT_DIR)
 
     def get_broker_count(self):
         filename = "./get-brokers-count.sh"
