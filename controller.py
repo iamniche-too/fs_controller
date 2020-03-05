@@ -29,6 +29,7 @@ class Controller:
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
+                input(f"Setup complete. Press any key to run the configuration {configuration}")
                 self.run_configuration(configuration)
 
         # now teardown and unprovision
@@ -38,7 +39,7 @@ class Controller:
         print(f"Deleting namespace: {namespace}")
         # run a script to delete a specific namespace
         filename = "./delete-namespace.sh"
-        args = [str(directory + filename), namespace]
+        args = [filename, namespace]
         self.bash_command_with_output(args, SCRIPT_DIR)
 
     def flush_consumer_throughput_queue(self):
@@ -106,16 +107,17 @@ class Controller:
 
     def check_brokers_ok(self, configuration):
         print("Waiting for brokers to start...")
-        i = 0
+        i = 1
+        attempts = 5
         check_brokers = self.check_brokers(configuration["number_of_brokers"])
         while not check_brokers:
-            time.sleep(20)
+            time.sleep(5)
 
             check_brokers = self.check_brokers(configuration["number_of_brokers"])
             print("(Still) waiting for brokers to start...")
             i += 1
-            if i > 6:
-                print("Error: Timeout waiting for brokers to start.")
+            if i > attempts:
+                print("Error: Time-out waiting for brokers to start.")
                 return False
 
         print("Brokers started ok.")
@@ -296,5 +298,6 @@ class Controller:
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
+    # service_account_email = input(“Please enter a service account email“) or SERVICE_ACCOUNT_EMAIL
     c = Controller()
     c.run()
