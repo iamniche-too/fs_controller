@@ -13,6 +13,9 @@ class TestController(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_k8s_deploy_kafka(self):
+        self.controller.k8s_deploy_kafka()
+
     # IMPORTANT: set ENV var GOOGLE_APPLICATION_CREDENTIALS=~/.gcp/kafka-k8s-trial-4287e941a38f.json
     def test_check_k8s(self):
         is_ok = self.controller.check_k8s()

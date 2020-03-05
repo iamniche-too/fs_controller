@@ -12,7 +12,7 @@ SCRIPT_DIR = "./scripts"
 TERRAFORM_DIR = "./terraform/"
 
 # set this to where-ever fs-kafka-k8s is cloned
-KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s"
+KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
@@ -37,8 +37,8 @@ class Controller:
                 input(f"Setup complete. Press any key to run the configuration {configuration}")
                 self.run_configuration(configuration)
 
-        # now teardown and unprovision
-        self.teardown_configuration(configuration)
+            # now teardown and unprovision
+            self.teardown_configuration(configuration)
 
     def k8s_delete_namespace(self, namespace):
         print(f"Deleting namespace: {namespace}")
@@ -110,6 +110,7 @@ class Controller:
         args = [filename]
         output = self.bash_command_with_output(args, SCRIPT_DIR)
         service_count = int(output)
+        print(f"k8s service count={service_count}")
         if service_count < K8S_SERVICE_COUNT:
             return True
         else:
