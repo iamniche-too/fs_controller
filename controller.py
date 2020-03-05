@@ -4,7 +4,8 @@ import greenstalk
 import threading
 from statistics import mean
 
-K8S_SERVICE_COUNT = 28
+# Ranges between 23-28
+K8S_SERVICE_COUNT = 23
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
@@ -13,7 +14,7 @@ TERRAFORM_DIR = "./terraform/"
 
 # set this to where-ever fs-kafka-k8s is cloned
 KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
-PRODUCERS_CONSUMERS_DEPLOY_DIR = ""
+PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
