@@ -328,7 +328,7 @@ class Controller:
         #                   "disk_type": "pd-standard"}
 
         self.configurations.append(configuration_3_750_n1_standard_1)
-        self.configurations.append(configuration_3_750_n1_standard_1)
+        #self.configurations.append(configuration_3_750_n1_standard_1)
 
     def provision_node_pool(self, configuration):
         print(f"\r\n1. Provisioning node pool: {configuration}")
