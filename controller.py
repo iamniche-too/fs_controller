@@ -13,6 +13,8 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 
 SERVICE_ACCOUNT_EMAIL = "cluster-minimal-4752c47e1515@kafka-k8s-trial.iam.gserviceaccount.com"
+CLUSTER_NAME="gke-kafka-cluster"
+CLUSTER_ZONE="europe-west2-a"
 
 class Controller:
     configurations = []
@@ -119,8 +121,18 @@ class Controller:
         print("Brokers started ok.")
         return True
 
+    # run a script to configure gcloud
+    def configure_gcloud(self, cluster_name, cluster_zone):
+        print(f"configure_gcloud, cluster_name={cluster_name}, cluster_zone={cluster_zone}")
+        filename = "./configure-gcloud.sh"
+        args = [filename, cluster_name, cluster_zone]
+        self.bash_command_no_output(args, SCRIPT_DIR)
+
     def setup_configuration(self, configuration):
         print(f"2. Setup configuration: {configuration}")
+
+        # configure gcloud (output is kubeconfig.yaml)
+        self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
@@ -277,7 +289,7 @@ class Controller:
 
     def unprovision_node_pool(self, configuration):
         print(f"5. Unprovisioning node pool: {configuration}")
-        filename = "unprovision.sh"
+        filename = "./unprovision.sh"
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
         print("Node pool unprovisioned.")

@@ -1,6 +1,10 @@
 #!/bin/bash
+CLUSTER_NAME=$1
+CLUSTER_ZONE=$2
 
-export GET_CMD='gcloud container clusters describe gke-kafka-cluster --zone=europe-west2-a'
+echo "configuring gcloud with CLUSTER_NAME=$CLUSTER_NAME, CLUSTER_ZONE=$CLUSTER_ZONE"
+
+export GET_CMD="gcloud container clusters describe $CLUSTER_NAME --zone=$CLUSTER_ZONE"
 
 cat <<EOF > ./kubeconfig.yaml
 apiVersion: v1
