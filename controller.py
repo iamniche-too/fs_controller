@@ -13,6 +13,7 @@ TERRAFORM_DIR = "./terraform/"
 
 # set this to where-ever fs-kafka-k8s is cloned
 KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
+PRODUCERS_CONSUMERS_DEPLOY_DIR = ""
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
@@ -89,9 +90,16 @@ class Controller:
     # run a script to deploy kafka
     def k8s_deploy_kafka(self):
         print(f"k8s_deploy_kafka")
-        filename = "./deploy.sh"
+        filename = "./deploy/gcp/deploy.sh"
         args = [filename]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
+
+        # run a script to deploy kafka
+    def k8s_deploy_producers_consumers(self):
+        print(f"k8s_deploy_producers_consumers")
+        filename = "./deploy/gcp/deploy.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, PRODUCERS_CONSUMERS_DEPLOY_DIR)
 
     def k8s_scale_brokers(self, broker_count):
         print(f"k8s_scale_brokers, broker_count={broker_count}")
@@ -176,6 +184,9 @@ class Controller:
 
         # deploy kafka
         self.k8s_deploy_kafka()
+
+        # deploy producers/consumers
+        self.k8s_deploy_producers_consumers()
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
