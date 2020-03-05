@@ -1,9 +1,9 @@
-SERVICE_ACCOUNT_EMAIL="cluster-minimal-e8bb921d9b59@kafka-k8s-trial.iam.gserviceaccount.com"
-MACHINE_TYPE=$1
-DISK_TYPE=$2
-DISK_SIZE=$3
+SERVICE_ACCOUNT_EMAIL=$1
+MACHINE_TYPE=$2
+DISK_TYPE=$3
+DISK_SIZE=$4
 
-echo "Configuring with MACHINE_TYPE=$MACHINE_TYPE, DISK_TYPE=$DISK_TYPE, DISK_SIZE=$3"
+echo "Configuring with SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL, MACHINE_TYPE=$MACHINE_TYPE, DISK_TYPE=$DISK_TYPE, DISK_SIZE=$3"
 cat <<EOF > ./kafka-node-pool.tf
 # https://www.terraform.io/docs/providers/google/r/container_node_pool.html
 resource "google_container_node_pool" "kafka_node_pool" {

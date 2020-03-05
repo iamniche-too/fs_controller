@@ -6,10 +6,13 @@ from statistics import mean
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
-SCRIPT_DIR = "./scripts/"
+SCRIPT_DIR = "./scripts"
+TERRAFORM_DIR = "./terraform/"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
+
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-e8bb921d9b59@kafka-k8s-trial.iam.gserviceaccount.com"
 
 class Controller:
     configurations = []
@@ -27,11 +30,27 @@ class Controller:
             self.unprovision_node_pool(configuration)
 
     def k8s_delete_namespace(self, namespace):
+        print(f"Deleting namespace: {namespace}")
         # run a script to delete a specific namespace
-        directory = SCRIPT_DIR
-        filename = "delete-namespace.sh"
+        filename = "./delete-namespace.sh"
         args = [str(directory + filename), namespace]
-        self.bash_command_no_output(args)
+        self.bash_command_with_output(args, SCRIPT_DIR)
+
+    def flush_consumer_throughput_queue(self):
+        # no flush() method exists in greenstalk so need to do it "brute force"
+        print("Flushing consumer throughput queue")
+
+        stats = self.consumer_throughput_queue.stats_tube("consumer_throughput")
+        print(stats)
+
+        done = False
+        while not done:
+            job = self.consumer_throughput_queue.reserve(timeout=0)
+            if job is None:
+                done = True
+            self.consumer_throughput_queue.delete(job)
+
+        print("Consumer throughput queue flushed.")
 
     def teardown_configuration(self, configuration):
         print(f"4. Teardown configuration: {configuration}")
@@ -41,6 +60,9 @@ class Controller:
 
         # Remove kafka brokers
         self.k8s_delete_namespace(KAFKA_NAMESPACE)
+
+        # flush the consumer throughput queue
+        self.flush_consumer_throughput_queue()
 
     def k8s_scale_brokers(self, broker_count):
         print(f"k8s_scale_brokers, broker_count={broker_count}")
@@ -58,13 +80,12 @@ class Controller:
         self.bash_command_no_output(args)
 
     def get_broker_count(self):
-        directory = SCRIPT_DIR
-        filename = "get-brokers-count.sh"
-        args = [str(directory + filename)]
+        filename = "./get-brokers-count.sh"
+        args = [filename]
 
         broker_count = 0
         try:
-            broker_count = int(self.bash_command_with_output(args))
+            broker_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
         except ValueError:
             pass
 
@@ -103,41 +124,39 @@ class Controller:
         # Configure producers with required message size
         self.k8s_configure_producers(str(configuration["message_size_kb"]))
 
-    def bash_command_with_output(self, additional_args):
+    def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
         print(args)
-        p = subprocess.Popen(args, stdout=subprocess.PIPE)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
         out = p.communicate()[0].decode("UTF-8")
         return out
 
-    def bash_command_with_wait(self, additional_args):
+    def bash_command_with_wait(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
         print(args)
         try:
-            subprocess.check_call(args, stderr=subprocess.STDOUT)
+            subprocess.check_call(args, stderr=subprocess.STDOUT, cwd=working_directory)
         except subprocess.CalledProcessError:
             # There was an error - command exited with non-zero code
             exit()
 
-    def bash_command_no_output(self, additional_args):
+    def bash_command_no_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
         print(args)
-        subprocess.Popen(args)
+        subprocess.Popen(args, cwd=working_directory)
 
     def k8s_scale_producers(self, producer_count):
-        directory = "./scripts/"
-        filename = "scale-producers.sh"
-        args = [str(directory + filename), str(producer_count)]
-        self.bash_command_no_output(args)
+        filename = "./scale-producers.sh"
+        args = [filename, str(producer_count), SCRIPT_DIR]
+        self.bash_command_with_output(args)
 
     def get_producer_count(self):
-        directory = "./scripts/"
-        filename = "get-producers-count.sh"
-        args = [str(directory + filename)]
+        filename = "./get-producers-count.sh"
+        args = [filename]
 
         producer_count = 0
         try:
-            producer_count = int(self.bash_command_with_output(args))
+            producer_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
         except ValueError:
             pass
 
@@ -237,24 +256,21 @@ class Controller:
     def provision_node_pool(self, configuration):
         print(f"1. Provisioning node pool: {configuration}")
 
-        directory = "./terraform/"
-        filename = "generate-kafka-node-pool.sh"
-        args = [str(directory + filename), configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
-        self.bash_command_with_wait(args)
+        filename = "./generate-kafka-node-pool.sh"
+        args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
+        self.bash_command_with_wait(args, TERRAFORM_DIR)
 
-        directory = "./terraform/"
-        filename = "provision.sh"
-        args = [str(directory + filename)]
-        self.bash_command_with_wait(args)
+        filename = "./provision.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, TERRAFORM_DIR)
 
         print("Node pool provisioned.")
 
     def unprovision_node_pool(self, configuration):
         print(f"5. Unprovisioning node pool: {configuration}")
-        directory = "./terraform/"
         filename = "unprovision.sh"
-        args = [str(directory + filename)]
-        self.bash_command_with_wait(args)
+        args = [filename]
+        self.bash_command_with_wait(args, TERRAFORM_DIR)
         print("Node pool unprovisioned.")
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
