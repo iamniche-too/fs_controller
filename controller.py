@@ -224,8 +224,8 @@ class Controller:
 
     def k8s_scale_producers(self, producer_count):
         filename = "./scale-producers.sh"
-        args = [filename, str(producer_count), SCRIPT_DIR]
-        self.bash_command_with_output(args)
+        args = [filename, str(producer_count)]
+        self.bash_command_with_output(args, SCRIPT_DIR)
 
     def get_producer_count(self):
         filename = "./get-producers-count.sh"
@@ -301,7 +301,7 @@ class Controller:
             except greenstalk.TimedOutError:
                 print("Warning: nothing in consumer throughput queue.")
 
-            time.sleep(int(configuration["consumer_throughput_reporting_interval"] or 5))
+            time.sleep(int(configuration["consumer_throughput_reporting_interval"]))
 
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
@@ -321,7 +321,7 @@ class Controller:
         print("Loading configurations.")
 
         configuration_3_750_n1_standard_1 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
-                           "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard"}
+                           "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard", "consumer_throughput_reporting_interval": 5}
 
         # configuration_5_750_n1_standard_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
         #                   "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100,
