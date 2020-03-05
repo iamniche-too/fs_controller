@@ -25,5 +25,5 @@ spec:
           - name: producer
             env:
             - name: MESSAGE_SIZE_KB
-              value: $MESSAGE_SIZE_KB
+              value: "$MESSAGE_SIZE_KB"
 EOF
