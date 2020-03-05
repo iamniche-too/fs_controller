@@ -13,6 +13,9 @@ class TestController(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_k8s_configure_producers(self):
+        self.controller.k8s_configure_producers(75)
+
     def test_k8s_deploy_kafka(self):
         self.controller.k8s_deploy_kafka()
 
