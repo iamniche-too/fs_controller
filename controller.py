@@ -219,8 +219,8 @@ class Controller:
         # Configure producers with required message size
         self.k8s_configure_producers(str(configuration["message_size_kb"]))
 
-        # post initialise message to the consumer reporting endpoint
-        self.post_json(ENDPOINT_URL, dict(message="consumers initialised"))
+        # post configuration to the consumer reporting endpoint
+        self.post_json(ENDPOINT_URL, configuration)
 
         return True
 
