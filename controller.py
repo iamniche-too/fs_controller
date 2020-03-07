@@ -3,6 +3,7 @@ import time
 import greenstalk
 import threading
 import requests
+import json
 from statistics import mean
 
 # Ranges between 23-28
@@ -342,7 +343,7 @@ class Controller:
     def load_configurations(self):
         print("Loading configurations.")
 
-        configuration_3_750_n1_standard_1 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
+        configuration_3_750_n1_standard_1 = {"number_of_brokers": 3, "message_size_kb": 7500, "max_producers": 3,
                            "producer_increment_interval_sec": 60, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard", "consumer_throughput_reporting_interval": 5}
 
         # configuration_5_750_n1_standard_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
