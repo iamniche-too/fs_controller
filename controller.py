@@ -254,16 +254,14 @@ class Controller:
             # Start a new producer
             self.k8s_scale_producers(str(actual_producer_count))
 
-            time.sleep(10)
-
             i = 0
             check_producers = self.check_producers(actual_producer_count)
             while not check_producers:
-                time.sleep(1)
+                time.sleep(10)
                 check_brokers = self.check_producers(actual_producer_count)
                 print("(Still) waiting for producer to start...")
                 i += 1
-                if i > 3:
+                if i > 4:
                     print("Error: Timeout waiting for producer to start...")
                     exit()
 
@@ -331,7 +329,7 @@ class Controller:
         print("Loading configurations.")
 
         configuration_3_750_n1_standard_1 = {"number_of_brokers": 3, "message_size_kb": 750, "max_producers": 3,
-                           "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard", "consumer_throughput_reporting_interval": 5}
+                           "producer_increment_interval_sec": 60, "machine_size": "n1-standard-1", "disk_size": 100, "disk_type": "pd-standard", "consumer_throughput_reporting_interval": 5}
 
         # configuration_5_750_n1_standard_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
         #                   "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100,
