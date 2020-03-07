@@ -45,7 +45,7 @@ class Controller:
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
-                input(f"Setup complete. Press any key to run the configuration {configuration}")
+                #input(f"Setup complete. Press any key to run the configuration {configuration}")
                 self.run_configuration(configuration)
 
             # now teardown and unprovision
@@ -304,7 +304,7 @@ class Controller:
                     if consumer_throughput_average < consumer_throughput_tolerance:
                         print(f"Consumer throughput average {consumer_throughput_average} is below tolerance {DEFAULT_THROUGHPUT_MB_S * DEFAULT_CONSUMER_TOLERANCE})")
 
-                    done = True
+                    # done = True
 
                 # Finally delete from queue
                 self.consumer_throughput_queue.delete(job)
