@@ -2,6 +2,7 @@ import subprocess
 import time
 import greenstalk
 import threading
+import requests
 from statistics import mean
 
 # Ranges between 23-28
@@ -28,12 +29,17 @@ SERVICE_ACCOUNT_EMAIL = "cluster-minimal-a69575c710d9@kafka-k8s-trial.iam.gservi
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
 
+ENDPOINT_URL = "http://focussensors.duckdns.org:9000/consumer_reporting_endpoint"
 stop_threads = False
 
 class Controller:
     configurations = []
 
     consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
+
+    def post_json(endpoint_url, payload):
+      headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+      request = requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
 
     def run(self):
         self.load_configurations()
@@ -211,6 +217,9 @@ class Controller:
 
         # Configure producers with required message size
         self.k8s_configure_producers(str(configuration["message_size_kb"]))
+
+        # post initialise message to the consumer reporting endpoint
+        self.post_json(ENDPOINT_URL, dict(message="consumers initialised"))
 
         return True
 
