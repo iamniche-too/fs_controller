@@ -63,6 +63,14 @@ spec:
             - name: git-repo-ro
               mountPath: /etc/config
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
             - name: MESSAGE_SIZE_KB
               value: "$MESSAGE_SIZE_KB"
       volumes:
