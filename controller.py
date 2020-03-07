@@ -13,15 +13,22 @@ SCRIPT_DIR = "./scripts"
 TERRAFORM_DIR = "./terraform/"
 
 # set this to where-ever fs-kafka-k8s is cloned
-KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
-PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
+#KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
+KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
+#PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
+PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-494cd3e041ed@kafka-k8s-trial.iam.gserviceaccount.com"
+#SERVICE_ACCOUNT_EMAIL = "cluster-minimal-494cd3e041ed@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted 07/03 @ 1007
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-a69575c710d9@kafka-k8s-trial.iam.gserviceaccount.com"
+
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
+
+stop_threads = False
 
 class Controller:
     configurations = []
@@ -55,8 +62,8 @@ class Controller:
         # no flush() method exists in greenstalk so need to do it "brute force"
         print("Flushing consumer throughput queue")
 
-        stats = self.consumer_throughput_queue.stats_tube("consumer_throughput")
-        print(stats)
+        # stats = self.consumer_throughput_queue.stats_tube("consumer_throughput")
+        # print(stats)
 
         done = False
         while not done:
@@ -271,8 +278,9 @@ class Controller:
         throughput_list = []
 
         done = False
+        global stop_threads
 
-        while done is False:
+        while done is False and stop_threads is False:
             print(f"Checking consumer throughput queue...")
 
             try:
@@ -357,3 +365,4 @@ if __name__ == '__main__':
     print("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
     c = Controller()
     c.run()
+    stop_threads = True
