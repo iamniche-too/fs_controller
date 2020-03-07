@@ -151,7 +151,12 @@ class Controller:
         return self.get_broker_count() == expected_broker_count
 
     def check_producers(self, expected_producer_count):
-        return self.get_producer_count() == expected_producer_count
+        actual_producer_count = self.get_producer_count()
+        print(f"actual_producer_count={actual_producer_count}, expected_producer_count={expected_producer_count}")
+        if actual_producer_count == expected_producer_count:
+          return True
+        else:
+          return False
 
     def check_brokers_ok(self, configuration):
         print("Waiting for brokers to start...")
@@ -258,7 +263,7 @@ class Controller:
             check_producers = self.check_producers(actual_producer_count)
             while not check_producers:
                 time.sleep(10)
-                check_brokers = self.check_producers(actual_producer_count)
+                check_producers = self.check_producers(actual_producer_count)
                 print("(Still) waiting for producer to start...")
                 i += 1
                 if i > 4:
