@@ -37,7 +37,7 @@ class Controller:
 
     consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
 
-    def post_json(endpoint_url, payload):
+    def post_json(self, endpoint_url, payload):
       headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
       request = requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
 
