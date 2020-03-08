@@ -23,9 +23,8 @@ PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-cons
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 
-#SERVICE_ACCOUNT_EMAIL = "cluster-minimal-494cd3e041ed@kafka-k8s-trial.iam.gserviceaccount.com"
-# Cluster restarted 07/03 @ 1007
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-a69575c710d9@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 08/03 @ 1343 
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-9cf557d76c62@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
