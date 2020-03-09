@@ -27,7 +27,7 @@ resource "google_container_node_pool" "kafka_node_pool" {
     min_node_count = 3 
 
     # Maximum number of nodes in the NodePool. Must be >= min_node_count.
-    max_node_count = 7 
+    max_node_count = 9 
   }
 
   # Node management configuration, wherein auto-repair and auto-upgrade is configured.
