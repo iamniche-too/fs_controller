@@ -89,11 +89,18 @@ class Controller:
     def teardown_configuration(self, configuration):
         print(f"\r\n4. Teardown configuration: {configuration}")
 
+        global stop_threads
+
         # Remove producers & consumers
         self.k8s_delete_namespace(PRODUCER_CONSUMER_NAMESPACE)
 
         # Remove kafka brokers
         self.k8s_delete_namespace(KAFKA_NAMESPACE)
+
+        stop_threads = True
+
+        # wait for thread to exit
+        time.sleep(5)
 
         # flush the consumer throughput queue
         self.flush_consumer_throughput_queue()
@@ -384,4 +391,3 @@ if __name__ == '__main__':
     print("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
     c = Controller()
     c.run()
-    stop_threads = True
