@@ -138,7 +138,7 @@ class Controller:
 
     def k8s_scale_consumers(self, num_consumers):
         print(f"k8s_configure_consumers, num_consumers={num_consumers}")
-        filename = "./configure-consumers.sh"
+        filename = "./scale-consumers.sh"
         args = [filename, str(num_consumers)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
