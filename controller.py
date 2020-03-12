@@ -331,8 +331,7 @@ class Controller:
                     consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * DEFAULT_CONSUMER_TOLERANCE)
                     if consumer_throughput_average < consumer_throughput_tolerance:
                         print(f"Consumer throughput average {consumer_throughput_average} is below tolerance {DEFAULT_THROUGHPUT_MB_S * DEFAULT_CONSUMER_TOLERANCE})")
-
-                    # done = True
+                        done = True
 
                 # Finally delete from queue
                 self.consumer_throughput_queue.delete(job)
@@ -365,18 +364,12 @@ class Controller:
 
         #configuration_3_750_n1_standard_1 = {
         configuration_template = {
-                "number_of_brokers": 3, "message_size_kb": 750, "max_producers": 1, "num_consumers": 3,
-                "producer_increment_interval_sec": 180, "machine_size": "n1-standard-1", "disk_size": 100,
-                "disk_type": "pd-standard", "consumer_throughput_reporting_interval": 5}
+                "number_of_brokers": 3, "message_size_kb": 100, "max_producers": 7, "num_consumers": 3,
+                "producer_increment_interval_sec": 180, "machine_size": "n1-standard-16", "disk_size": 100,
+                "disk_type": "local-ssd", "consumer_throughput_reporting_interval": 5}
 
-        # configuration_5_750_n1_standard_1 = {"number_of_brokers": 5, "message_size_kb": 750, "max_producers": 3,
-        #                   "producer_increment_interval_sec": 30, "machine_size": "n1-standard-1", "disk_size": 100,
-        #                   "disk_type": "pd-standard"}
-
-        #self.configurations.append(configuration_3_750_n1_standard_1)
-        #self.configurations.append(configuration_3_750_n1_standard_1)
         self.configurations.append(dict(configuration_template))
-        self.configurations.append(dict(configuration_template, message_size_kb=7500))
+        #self.configurations.append(dict(configuration_template, message_size_kb=7500))
 
     def provision_node_pool(self, configuration):
         print(f"\r\n1. Provisioning node pool: {configuration}")
