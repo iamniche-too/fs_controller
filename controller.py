@@ -89,11 +89,19 @@ class Controller:
     def teardown_configuration(self, configuration):
         print(f"\r\n4. Teardown configuration: {configuration}")
 
+        global stop_threads
+
         # Remove producers & consumers
         self.k8s_delete_namespace(PRODUCER_CONSUMER_NAMESPACE)
 
         # Remove kafka brokers
         self.k8s_delete_namespace(KAFKA_NAMESPACE)
+
+        # stop reading the consumer queue
+        stop_threads = True
+
+        # wait for thread to exit
+        time.sleep(5)
 
         # flush the consumer throughput queue
         self.flush_consumer_throughput_queue()
@@ -102,13 +110,13 @@ class Controller:
         self.unprovision_node_pool(configuration)
 
     # run a script to deploy kafka
-    def k8s_deploy_kafka(self):
+    def k8s_deploy_kafka(self, num_partitions):
         print(f"k8s_deploy_kafka")
         filename = "./deploy/gcp/deploy.sh"
-        args = [filename]
+        args = [filename, num_partitions]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
-        # run a script to deploy kafka
+    # run a script to deploy kafka
     def k8s_deploy_producers_consumers(self):
         print(f"k8s_deploy_producers_consumers")
         filename = "./deploy/gcp/deploy.sh"
@@ -126,6 +134,12 @@ class Controller:
         print(f"k8s_configure_producers, message_size={message_size}")
         filename = "./configure-producers.sh"
         args = [filename, str(message_size)]
+        self.bash_command_with_wait(args, SCRIPT_DIR)
+
+    def k8s_scale_consumers(self, num_consumers):
+        print(f"k8s_configure_consumers, num_consumers={num_consumers}")
+        filename = "./configure-consumers.sh"
+        args = [filename, str(num_consumers)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def check_k8s(self):
@@ -201,14 +215,19 @@ class Controller:
             print("Aborting configuration - k8s services not ok.")
             return False
 
-        # deploy kafka
-        self.k8s_deploy_kafka()
+        # deploy kafka brokers
+        # where num_partitions = num_consumers
+        num_partitions = configuration["num_consumers"]
+        self.k8s_deploy_kafka(num_partitions)
 
         # deploy producers/consumers
         self.k8s_deploy_producers_consumers()
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
+
+        # scale consumers
+        self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
         all_ok = self.check_brokers_ok(configuration)
         if not all_ok:
@@ -346,7 +365,7 @@ class Controller:
 
         #configuration_3_750_n1_standard_1 = {
         configuration_template = {
-                "number_of_brokers": 3, "message_size_kb": 750, "max_producers": 1,
+                "number_of_brokers": 3, "message_size_kb": 750, "max_producers": 1, "num_consumers": 3,
                 "producer_increment_interval_sec": 180, "machine_size": "n1-standard-1", "disk_size": 100,
                 "disk_type": "pd-standard", "consumer_throughput_reporting_interval": 5}
 
@@ -384,4 +403,3 @@ if __name__ == '__main__':
     print("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
     c = Controller()
     c.run()
-    stop_threads = True
