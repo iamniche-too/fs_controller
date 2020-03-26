@@ -22,9 +22,10 @@ PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-cons
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
+PRODUCER_STARTUP_INTERVAL_S=26
 
-# Cluster restarted: 08/03 @ 1343 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-e55eecc6ef0e@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 26/03 @ 2129 
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-d426daa968af@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
@@ -113,7 +114,7 @@ class Controller:
     def k8s_deploy_kafka(self, num_partitions):
         print(f"k8s_deploy_kafka")
         filename = "./deploy/gcp/deploy.sh"
-        args = [filename, num_partitions]
+        args = [filename, str(num_partitions)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     # run a script to deploy kafka
@@ -287,6 +288,8 @@ class Controller:
             # Start a new producer
             self.k8s_scale_producers(str(actual_producer_count))
 
+            time.sleep(PRODUCER_STARTUP_INTERVAL_S)
+
             i = 0
             check_producers = self.check_producers(actual_producer_count)
             while not check_producers:
@@ -365,8 +368,8 @@ class Controller:
         #configuration_3_750_n1_standard_1 = {
         configuration_template = {
                 "number_of_brokers": 3, "message_size_kb": 100, "max_producers": 7, "num_consumers": 3,
-                "producer_increment_interval_sec": 180, "machine_size": "n1-standard-16", "disk_size": 100,
-                "disk_type": "local-ssd", "consumer_throughput_reporting_interval": 5}
+                "producer_increment_interval_sec": 180, "machine_size": "n1-standard-1", "disk_size": 10,
+                "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
 
         self.configurations.append(dict(configuration_template))
         #self.configurations.append(dict(configuration_template, message_size_kb=7500))
