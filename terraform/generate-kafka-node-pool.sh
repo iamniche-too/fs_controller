@@ -75,10 +75,14 @@ resource "google_container_node_pool" "kafka_node_pool" {
       disable-legacy-endpoints = "true"
     }
    
-    taint {
-      key = "is-kafka-broker-node"
-      value = "true"
-      effect = "NO_SCHEDULE"
+    #taint {
+    #  key = "is-kafka-broker-node"
+    #  value = "true"
+    #  effect = "NO_SCHEDULE"
+    #}
+
+    labels = {
+      kafka-broker-node = "true"
     }
 
     tags = [ 

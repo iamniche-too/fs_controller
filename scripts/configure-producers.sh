@@ -23,22 +23,20 @@ spec:
         app: producer
     spec:
       affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: producer-consumer-node 
+                  operator: In
+                  values: ["true"]
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchExpressions:
                   - key: app
                     operator: In
-                    values: ["kafka"]
-              topologyKey: "kubernetes.io/hostname"
-              namespaces:
-                - kafka
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app
-                    operator: In
-                    values: ["consumer"]
+                    values: ["producer", "consumer"]
               topologyKey: "kubernetes.io/hostname"
       initContainers:
         - name: git-repo

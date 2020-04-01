@@ -6,8 +6,8 @@ import requests
 import json
 from statistics import mean
 
-# Ranges between 23-28
-K8S_SERVICE_COUNT = 23
+# Ranges between 22-50+
+K8S_SERVICE_COUNT = 22
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
@@ -24,8 +24,8 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S=26
 
-# Cluster restarted: 26/03 @ 2129 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-d426daa968af@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 01/04 @ 0935 
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-f71cd62c4585@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
@@ -113,7 +113,7 @@ class Controller:
     # run a script to deploy kafka
     def k8s_deploy_kafka(self, num_partitions):
         print(f"k8s_deploy_kafka")
-        filename = "./deploy/gcp/deploy.sh"
+        filename = "./deploy.sh"
         args = [filename, str(num_partitions)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
@@ -182,10 +182,11 @@ class Controller:
     def check_brokers_ok(self, configuration):
         print("Waiting for brokers to start...")
         i = 1
-        attempts = 10
+        attempts = configuration["number_of_brokers"]
         check_brokers = self.check_brokers(configuration["number_of_brokers"])
         while not check_brokers:
-            time.sleep(20)
+            # allow 72s per broker 
+            time.sleep(72)
 
             check_brokers = self.check_brokers(configuration["number_of_brokers"])
             print("(Still) waiting for brokers to start...")
@@ -210,11 +211,10 @@ class Controller:
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
-        # check K8s
+        # check K8s & warn (rather than fail)
         all_ok = self.check_k8s()
         if not all_ok:
-            print("Aborting configuration - k8s services not ok.")
-            return False
+            print("Warning - Check K8S Services (fewer services running than expected).")
 
         # deploy kafka brokers
         # where num_partitions = num_consumers
@@ -227,13 +227,13 @@ class Controller:
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
 
-        # scale consumers
-        self.k8s_scale_consumers(str(configuration["num_consumers"]))
-
         all_ok = self.check_brokers_ok(configuration)
         if not all_ok:
             print("Aborting configuration - brokers not ok.")
             return False
+
+        # scale consumers
+        self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
         # Configure producers with required message size
         self.k8s_configure_producers(str(configuration["message_size_kb"]))
@@ -290,14 +290,14 @@ class Controller:
 
             time.sleep(PRODUCER_STARTUP_INTERVAL_S)
 
-            i = 0
+            i = 1 
             check_producers = self.check_producers(actual_producer_count)
             while not check_producers:
                 time.sleep(10)
                 check_producers = self.check_producers(actual_producer_count)
-                print("(Still) waiting for producer to start...")
+                print(f"(Still) waiting for producer to start... ({i}/4)")
                 i += 1
-                if i > 4:
+                if i >= 4:
                     print("Error: Timeout waiting for producer to start...")
                     exit()
 
@@ -324,9 +324,9 @@ class Controller:
                 # append to the list
                 throughput_list.append(consumer_throughput)
 
-                if len(throughput_list) >= 3:
-                    # truncate list to last 3 entries
-                    throughput_list = throughput_list[-3:]
+                if len(throughput_list) >= 5:
+                    # truncate list to last 5 entries
+                    throughput_list = throughput_list[-5:]
 
                     consumer_throughput_average = mean(throughput_list)
                     print(f"Consumer throughput (average) = {consumer_throughput_average}")
@@ -367,8 +367,8 @@ class Controller:
 
         #configuration_3_750_n1_standard_1 = {
         configuration_template = {
-                "number_of_brokers": 3, "message_size_kb": 100, "max_producers": 7, "num_consumers": 3,
-                "producer_increment_interval_sec": 180, "machine_size": "n1-standard-1", "disk_size": 10,
+                "number_of_brokers": 3, "message_size_kb": 750, "max_producers": 7, "num_consumers": 1,
+                "producer_increment_interval_sec": 60, "machine_size": "n1-standard-1", "disk_size": 10,
                 "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
 
         self.configurations.append(dict(configuration_template))
