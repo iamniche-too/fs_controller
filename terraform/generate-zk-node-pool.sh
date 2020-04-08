@@ -1,12 +1,10 @@
 SERVICE_ACCOUNT_EMAIL=$1
-MACHINE_TYPE=$2
-DISK_TYPE=$3
-DISK_SIZE=$4
 
-echo "Configuring with SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL, MACHINE_TYPE=$MACHINE_TYPE, DISK_TYPE=$DISK_TYPE, DISK_SIZE=$3"
-cat <<EOF > ./kafka-node-pool-generated.tf
+echo "Configuring with SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL"
+
+cat <<EOF > ./zk-node-pool-generated.tf
 # https://www.terraform.io/docs/providers/google/r/container_node_pool.html
-resource "google_container_node_pool" "kafka_node_pool" {
+resource "google_container_node_pool" "zk_node_pool" {
   # The location (region or zone) in which the cluster resides
   location = "europe-west2-a" 
 
@@ -14,7 +12,7 @@ resource "google_container_node_pool" "kafka_node_pool" {
 
   # The name of the node pool. Instance groups created will have the cluster
   # name prefixed automatically.
-  name = "kafka-node-pool" 
+  name = "zk-node-pool" 
 
   # The cluster to create the node pool for.
   cluster = "gke-kafka-cluster"
@@ -27,7 +25,7 @@ resource "google_container_node_pool" "kafka_node_pool" {
     min_node_count = 3 
 
     # Maximum number of nodes in the NodePool. Must be >= min_node_count.
-    max_node_count = 7 
+    max_node_count = 3 
   }
 
   # Node management configuration, wherein auto-repair and auto-upgrade is configured.
@@ -43,17 +41,17 @@ resource "google_container_node_pool" "kafka_node_pool" {
   node_config {
     # The name of a Google Compute Engine machine type. Defaults to
     # n1-standard-1.
-    machine_type = "$MACHINE_TYPE"
+    machine_type = "n1-standard-1"
 
     service_account = "$SERVICE_ACCOUNT_EMAIL" 
 
     # Size of the disk attached to each node, specified in GB. The smallest
     # allowed disk size is 10GB. Defaults to 100GB.
-    disk_size_gb = "$DISK_SIZE"
+    disk_size_gb = "10"
 
     # Type of the disk attached to each node (e.g. 'pd-standard' or 'pd-ssd').
     # If unspecified, the default disk type is 'pd-standard'
-    disk_type = "$DISK_TYPE"
+    disk_type = "pd-ssd"
 
     # A boolean that represents whether or not the underlying node VMs are
     # preemptible. See the official documentation for more information.
@@ -75,18 +73,12 @@ resource "google_container_node_pool" "kafka_node_pool" {
       disable-legacy-endpoints = "true"
     }
    
-    #taint {
-    #  key = "is-kafka-broker-node"
-    #  value = "true"
-    #  effect = "NO_SCHEDULE"
-    #}
-
     labels = {
-      kafka-broker-node = "true"
+      zk-node = "true"
     }
 
     tags = [ 
-      "kafka-broker-node" 
+      "zk-node" 
     ]
   }
 
