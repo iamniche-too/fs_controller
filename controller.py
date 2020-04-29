@@ -334,7 +334,7 @@ class Controller:
                     # truncate list to last 10 entries
                     consumer_throughput_dict[consumer_id] = consumer_throughput_dict[consumer_id][-10:]
 
-                    consumer_throughput_average = mean(consmer_throughput_dict[consumer_id])
+                    consumer_throughput_average = mean(consumer_throughput_dict[consumer_id])
                     print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
                     consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
