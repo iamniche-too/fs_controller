@@ -54,11 +54,14 @@ class Controller:
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
-                #input(f"Setup complete. Press any key to run the configuration {configuration}")
                 self.run_configuration(configuration)
 
             # now teardown and unprovision
             self.teardown_configuration(configuration)
+
+            # reset the stop threads flag
+            global stop_threads
+            stop_threads = False
 
     def k8s_delete_namespace(self, namespace):
         print(f"Deleting namespace: {namespace}")
@@ -283,8 +286,11 @@ class Controller:
         return producer_count
 
     def increment_producers_thread(self, configuration):
-        actual_producer_count = 1
-        while actual_producer_count <= configuration["max_producer_count"]:
+        global stop_threads
+
+        # start at configured value
+        actual_producer_count = configuration["start_producer_count"] 
+        while stop_threads is False and (actual_producer_count <= configuration["max_producer_count"]):
             print(f"Starting producer {actual_producer_count}")
             # Start a new producer
             self.k8s_scale_producers(str(actual_producer_count))
@@ -313,10 +319,15 @@ class Controller:
         # create a dictionary of lists
         consumer_throughput_dict = defaultdict(list)
 
-        done = False
+        # Ignore the first 2 entries for all consumers
+        for i in range(configuration["num_consumers"]*2):
+          job = self.consumer_throughput_queue.reserve(timeout=5)
+          data = json.loads(job.body)
+          print(f"Ignoring data {data} on consumer throughput queue...")
+         
         global stop_threads
 
-        while done is False and stop_threads is False:
+        while stop_threads is False:
             try:
                 job = self.consumer_throughput_queue.reserve(timeout=5)
                 data = json.loads(job.body)
@@ -340,7 +351,7 @@ class Controller:
                     consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
                     if consumer_throughput_average < consumer_throughput_tolerance:
                         print(f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
-                        done = True
+                        stop_threads = True
 
                 # Finally delete from queue
                 self.consumer_throughput_queue.delete(job)
