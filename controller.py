@@ -323,7 +323,7 @@ class Controller:
 
                 print(f"Received data {data} on consumer throughput queue.")
 
-                consumer_id = data["id"]
+                consumer_id = data["consumer_id"]
                 throughput = data["throughput"]
                 num_producers = data["producer_count"]
 
