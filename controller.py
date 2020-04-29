@@ -54,7 +54,7 @@ class Controller:
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
-                input(f"Setup complete. Press any key to run the configuration {configuration}")
+                #input(f"Setup complete. Press any key to run the configuration {configuration}")
                 self.run_configuration(configuration)
 
             # now teardown and unprovision
@@ -332,7 +332,7 @@ class Controller:
 
                 if len(consumer_throughput_dict[consumer_id]) >= 10:
                     # truncate list to last 10 entries
-                    throughput_list = throughput_list[-10:]
+                    consumer_throughput_dict[consumer_id] = consumer_throughput_dict[consumer_id][-10:]
 
                     consumer_throughput_average = mean(consmer_throughput_dict[consumer_id])
                     print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
