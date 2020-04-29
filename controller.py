@@ -26,8 +26,8 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S=26
 
-# Cluster restarted: 27/04 @ 0951 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-2dd223912a70@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 29/04 @ 1041 
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-53f4250eb059@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
@@ -237,7 +237,7 @@ class Controller:
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
         # Configure producers with required message size
-        self.k8s_configure_producers(str(configurarion["start_producer_count"]), str(configuration["message_size_kb"]))
+        self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
