@@ -1,7 +1,8 @@
 #!/bin/bash
-MESSAGE_SIZE_KB=$1
+START_PRODUCER_COUNT=$1
+MESSAGE_SIZE_KB=$2
 
-echo "configure producers, MESSAGE_SIZE_KB=$MESSAGE_SIZE_KB"
+echo "configure producers, START_PRODUCER_COUNT=$START_PRODUCER_COUNT, MESSAGE_SIZE_KB=$MESSAGE_SIZE_KB"
 
 source ./export-gcp-credentials.sh
 
@@ -13,7 +14,7 @@ metadata:
   name: producer
   namespace: producer-consumer
 spec:
-  replicas: 0
+  replicas: $START_PRODUCER_COUNT
   selector:
     matchLabels:
       app: producer

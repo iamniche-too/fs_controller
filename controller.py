@@ -4,7 +4,9 @@ import greenstalk
 import threading
 import requests
 import json
+import uuid
 from statistics import mean
+from collections import defaultdict
 
 # Ranges between 22-50+
 K8S_SERVICE_COUNT = 22
@@ -24,8 +26,8 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S=26
 
-# Cluster restarted: 01/04 @ 0935 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-f71cd62c4585@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 27/04 @ 0951 
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-2dd223912a70@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME="gke-kafka-cluster"
 CLUSTER_ZONE="europe-west2-a"
@@ -52,7 +54,7 @@ class Controller:
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
-                #input(f"Setup complete. Press any key to run the configuration {configuration}")
+                input(f"Setup complete. Press any key to run the configuration {configuration}")
                 self.run_configuration(configuration)
 
             # now teardown and unprovision
@@ -131,10 +133,10 @@ class Controller:
         args = [filename, str(broker_count)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
-    def k8s_configure_producers(self, message_size):
-        print(f"k8s_configure_producers, message_size={message_size}")
+    def k8s_configure_producers(self, start_producer_count, message_size):
+        print(f"k8s_configure_producers, start_producer_count={start_producer_count}, message_size={message_size}")
         filename = "./configure-producers.sh"
-        args = [filename, str(message_size)]
+        args = [filename, str(start_producer_count), str(message_size)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_scale_consumers(self, num_consumers):
@@ -180,16 +182,15 @@ class Controller:
           return False
 
     def check_brokers_ok(self, configuration):
-        print("Waiting for brokers to start...")
         i = 1
-        attempts = configuration["number_of_brokers"]
+        attempts = configuration["number_of_brokers"]*5
         check_brokers = self.check_brokers(configuration["number_of_brokers"])
         while not check_brokers:
-            # allow 72s per broker 
-            time.sleep(72)
+            # allow 20s per broker 
+            time.sleep(20)
 
             check_brokers = self.check_brokers(configuration["number_of_brokers"])
-            print("(Still) waiting for brokers to start...")
+            print(f"Waiting for brokers to start...{i}/{attempts}")
             i += 1
             if i > attempts:
                 print("Error: Time-out waiting for brokers to start.")
@@ -236,7 +237,7 @@ class Controller:
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
         # Configure producers with required message size
-        self.k8s_configure_producers(str(configuration["message_size_kb"]))
+        self.k8s_configure_producers(str(configurarion["start_producer_count"]), str(configuration["message_size_kb"]))
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
@@ -283,7 +284,7 @@ class Controller:
 
     def increment_producers_thread(self, configuration):
         actual_producer_count = 1
-        while actual_producer_count <= configuration["max_producers"]:
+        while actual_producer_count <= configuration["max_producer_count"]:
             print(f"Starting producer {actual_producer_count}")
             # Start a new producer
             self.k8s_scale_producers(str(actual_producer_count))
@@ -293,11 +294,11 @@ class Controller:
             i = 1 
             check_producers = self.check_producers(actual_producer_count)
             while not check_producers:
-                time.sleep(10)
+                time.sleep(5)
                 check_producers = self.check_producers(actual_producer_count)
-                print(f"(Still) waiting for producer to start... ({i}/4)")
+                print(f"(Still) waiting for producer to start... ({i}/24)")
                 i += 1
-                if i >= 4:
+                if i > 24:
                     print("Error: Timeout waiting for producer to start...")
                     exit()
 
@@ -309,31 +310,36 @@ class Controller:
             actual_producer_count += 1
 
     def check_consumer_throughput(self, configuration):
-        throughput_list = []
+        # create a dictionary of lists
+        consumer_throughput_dict = defaultdict(list)
 
         done = False
         global stop_threads
 
         while done is False and stop_threads is False:
-            print(f"Checking consumer throughput queue...")
-
             try:
                 job = self.consumer_throughput_queue.reserve(timeout=5)
-                consumer_throughput = float(job.body)
+                data = json.loads(job.body)
 
-                # append to the list
-                throughput_list.append(consumer_throughput)
+                print(f"Received data {data} on consumer throughput queue.")
 
-                if len(throughput_list) >= 5:
-                    # truncate list to last 5 entries
-                    throughput_list = throughput_list[-5:]
+                consumer_id = data["id"]
+                throughput = data["throughput"]
+                num_producers = data["producer_count"]
 
-                    consumer_throughput_average = mean(throughput_list)
-                    print(f"Consumer throughput (average) = {consumer_throughput_average}")
+                # append to specific list (as stored in dict)
+                consumer_throughput_dict[consumer_id].append(throughput)
 
-                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * DEFAULT_CONSUMER_TOLERANCE)
+                if len(consumer_throughput_dict[consumer_id]) >= 10:
+                    # truncate list to last 10 entries
+                    throughput_list = throughput_list[-10:]
+
+                    consumer_throughput_average = mean(consmer_throughput_dict[consumer_id])
+                    print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+
+                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
                     if consumer_throughput_average < consumer_throughput_tolerance:
-                        print(f"Consumer throughput average {consumer_throughput_average} is below tolerance {DEFAULT_THROUGHPUT_MB_S * DEFAULT_CONSUMER_TOLERANCE})")
+                        print(f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
                         done = True
 
                 # Finally delete from queue
@@ -343,6 +349,8 @@ class Controller:
                 print("Warning: nothing in consumer throughput queue.")
             except greenstalk.UnknownResponseError:
                 print("Warning: unknown response from beanstalkd server.")
+            except greenstalk.ConnectionError as ce:
+                print(f"Error: ConnectionError: {ce}")
 
             time.sleep(int(configuration["consumer_throughput_reporting_interval"]))
 
@@ -365,10 +373,13 @@ class Controller:
     def load_configurations(self):
         print("Loading configurations.")
 
+        configuration_uid = str(uuid.uuid4().hex.upper()[0:6])
+
         #configuration_3_750_n1_standard_1 = {
         configuration_template = {
-                "number_of_brokers": 3, "message_size_kb": 750, "max_producers": 7, "num_consumers": 1,
-                "producer_increment_interval_sec": 60, "machine_size": "n1-standard-1", "disk_size": 10,
+                "configuration_uid": configuration_uid,
+                "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 3, "max_producer_count": 9, "num_consumers": 3,
+                "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
                 "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
 
         self.configurations.append(dict(configuration_template))
@@ -379,6 +390,10 @@ class Controller:
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
+        self.bash_command_with_wait(args, TERRAFORM_DIR)
+
+        filename = "./generate-zk-node-pool.sh"
+        args = [filename, SERVICE_ACCOUNT_EMAIL]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
 
         filename = "./provision.sh"
