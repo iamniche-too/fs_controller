@@ -41,6 +41,8 @@ class Controller:
 
     def __init__(self, queue):
         self.consumer_throughput_queue = queue
+        self.producer_increment_process = None
+        self.consumer_throughput_process = None
 
     def post_json(self, endpoint_url, payload):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -389,19 +391,20 @@ class Controller:
             except ConnectionError as ce:
                 print(f"Error: ConnectionError: {ce}")
 
-        print(f"End of function.")
+        print(f"Terminating producer increment thread.")
+        self.producer_increment_process.terminate()
 
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
 
-        process2 = Process(target=self.check_consumer_throughput, args=(configuration,))
-        process2.start()
+        self.consumer_throughput_process = Process(target=self.check_consumer_throughput, args=(configuration,))
+        self.consumer_throughput_process.start()
 
-        process1 = Process(target=self.increment_producers_thread, args=(configuration,))
-        process1.start()
-        process1.join()
+        self.producer_increment_process = Process(target=self.increment_producers_thread, args=(configuration,))
+        self.producer_increment_process.start()
+        self.producer_increment_process.join()
 
-        print(f"Run completed for configuration {configuration}")
+        print(f"Run completed for configuration {configuration}.")
 
     def load_configurations(self):
         print("Loading configurations.")
