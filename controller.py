@@ -1,7 +1,6 @@
 import subprocess
 import time
 import greenstalk
-from multiprocessing import Process
 import requests
 import json
 import uuid
@@ -9,6 +8,8 @@ from statistics import mean
 from collections import defaultdict
 
 # Ranges between 22-50+
+from stoppable_process import StoppableProcess
+
 K8S_SERVICE_COUNT = 22
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
@@ -61,6 +62,7 @@ class Controller:
                 # wait for input to run configuration
                 input("Setup complete. Press any key to run the configuration...")
                 self.run_configuration(configuration)
+                self.consumer_throughput_process.join()
 
             # now teardown and unprovision
             self.teardown_configuration(configuration)
@@ -98,10 +100,16 @@ class Controller:
 
         print("Consumer throughput queue flushed.")
 
+    def stop_threads(self):
+        print("Stop threads called.")
+        self.producer_increment_process.stop()
+        self.consumer_throughput_process.stop()
+
     def teardown_configuration(self, configuration):
         print(f"\r\n4. Teardown configuration: {configuration}")
 
-        global stop_threads
+        # ensure threads are stopped
+        self.stop_threads()
 
         # Remove producers & consumers
         self.k8s_delete_namespace(PRODUCER_CONSUMER_NAMESPACE)
@@ -109,16 +117,10 @@ class Controller:
         # Remove kafka brokers
         self.k8s_delete_namespace(KAFKA_NAMESPACE)
 
-        # stop reading the consumer queue
-        stop_threads = True
-
-        # wait for thread to exit
-        time.sleep(5)
-
         # flush the consumer throughput queue
         self.flush_consumer_throughput_queue()
 
-        # take down the kafka node pool
+        # finally take down the kafka node pool
         self.unprovision_node_pool(configuration)
 
     # run a script to deploy kafka
@@ -181,14 +183,6 @@ class Controller:
 
     def check_brokers(self, expected_broker_count):
         return self.get_broker_count() == expected_broker_count
-
-    def check_producers(self, expected_producer_count):
-        actual_producer_count = self.get_producer_count()
-        print(f"actual_producer_count={actual_producer_count}, expected_producer_count={expected_producer_count}")
-        if actual_producer_count == expected_producer_count:
-            return True
-        else:
-            return False
 
     def check_brokers_ok(self, configuration):
         i = 1
@@ -270,129 +264,6 @@ class Controller:
 
         return True
 
-    def k8s_scale_producers(self, producer_count):
-        filename = "./scale-producers.sh"
-        args = [filename, str(producer_count)]
-        self.bash_command_with_output(args, SCRIPT_DIR)
-
-    def get_producer_count(self):
-        filename = "./get-producers-count.sh"
-        args = [filename]
-
-        producer_count = 0
-        try:
-            producer_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
-        except ValueError:
-            pass
-
-        print(f"reported_producer_count={producer_count}")
-        return producer_count
-
-    def increment_producers_thread(self, configuration):
-        global stop_threads
-
-        # start at configured value
-        actual_producer_count = configuration["start_producer_count"]
-        while stop_threads is False and (actual_producer_count <= configuration["max_producer_count"]):
-            print(f"Starting producer {actual_producer_count}")
-            # Start a new producer
-            self.k8s_scale_producers(str(actual_producer_count))
-
-            time.sleep(PRODUCER_STARTUP_INTERVAL_S)
-
-            i = 1
-            check_producers = self.check_producers(actual_producer_count)
-            while not check_producers:
-                time.sleep(5)
-                check_producers = self.check_producers(actual_producer_count)
-                print(f"(Still) waiting for producer to start... ({i}/24)")
-                i += 1
-                if i > 24:
-                    print("Error: Timeout waiting for producer to start...")
-                    exit()
-
-            # Wait for a specified interval before starting the next producer
-            producer_increment_interval_sec = configuration["producer_increment_interval_sec"]
-            print(f"Waiting {producer_increment_interval_sec}s before starting next producer.")
-            time.sleep(producer_increment_interval_sec)
-
-            actual_producer_count += 1
-
-    def check_consumer_throughput(self, configuration):
-
-        # create a dictionary of lists
-        consumer_throughput_dict = defaultdict(list)
-
-        # Ignore the first entry for all consumers
-        consumer_dict = defaultdict()
-        while len(consumer_dict.keys()) < int(configuration["num_consumers"]):
-            try:
-                job = self.consumer_throughput_queue.reserve(timeout=1)
-                if job is None:
-                    continue
-
-                data = json.loads(job.body)
-                print(f"Ignoring data {data} on consumer throughput queue...")
-                consumer_dict[data["consumer_id"]] = 1
-            except greenstalk.TimedOutError:
-                print("Timed out waiting for initial data on consumer throughput queue.")
-                pass
-
-        global stop_threads
-
-        while stop_threads is False:
-            try:
-                job = self.consumer_throughput_queue.reserve(timeout=1)
-
-                if job is None:
-                    print("Nothing on consumer throughput queue...")
-                    # sleep for 10ms
-                    time.sleep(.10)
-                    continue
-
-                data = json.loads(job.body)
-
-                print(f"Received data {data} on consumer throughput queue.")
-
-                consumer_id = data["consumer_id"]
-                throughput = data["throughput"]
-                num_producers = data["producer_count"]
-
-                # append to specific list (as stored in dict)
-                consumer_throughput_dict[consumer_id].append(throughput)
-
-                if len(consumer_throughput_dict[consumer_id]) >= 10:
-                    # truncate list to last 10 entries
-                    consumer_throughput_dict[consumer_id] = consumer_throughput_dict[consumer_id][-10:]
-
-                    consumer_throughput_average = mean(consumer_throughput_dict[consumer_id])
-                    print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
-
-                    consumer_throughput_tolerance = (
-                                DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
-                    if consumer_throughput_average < consumer_throughput_tolerance:
-                        print(
-                            f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
-                        stop_threads = True
-
-                # Finally delete from queue
-                try:
-                    self.consumer_throughput_queue.delete(job)
-                except OSError as e:
-                    print(f"Warning: unable to delete job {job}, {e}", e)
-
-            except greenstalk.TimedOutError:
-                print("Warning: nothing in consumer throughput queue.")
-            except greenstalk.UnknownResponseError:
-                print("Warning: unknown response from beanstalkd server.")
-            except greenstalk.DeadlineSoonError:
-                print("Warning: job timeout in next second.")
-            except ConnectionError as ce:
-                print(f"Error: ConnectionError: {ce}")
-
-        print(f"Terminating producer increment thread.")
-        self.producer_increment_process.terminate()
-
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
 
@@ -400,14 +271,11 @@ class Controller:
         # Note - number of producers may be
         self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
 
-        self.consumer_throughput_process = Process(target=self.check_consumer_throughput, args=(configuration,))
+        self.producer_increment_process = ProducerIncrementProcess(configuration)
+        self.consumer_throughput_process = CheckConsumerThroughputProcess(configuration, self.consumer_throughput_queue)
+
         self.consumer_throughput_process.start()
-
-        self.producer_increment_process = Process(target=self.increment_producers_thread, args=(configuration,))
         self.producer_increment_process.start()
-        self.producer_increment_process.join()
-
-        print(f"Run completed for configuration {configuration}.")
 
     def load_configurations(self):
         print("Loading configurations.")
@@ -417,7 +285,7 @@ class Controller:
         # configuration_3_750_n1_standard_1 = {
         configuration_template = {
             "configuration_uid": configuration_uid,
-            "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 3, "max_producer_count": 9,
+            "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 9,
             "num_consumers": 3,
             "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
             "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
@@ -450,6 +318,163 @@ class Controller:
         self.bash_command_with_wait(args, TERRAFORM_DIR)
         print("Node pool unprovisioned.")
 
+
+class CheckConsumerThroughputProcess(StoppableProcess):
+
+    def __init__(self, configuration, queue):
+        StoppableProcess.__init__(self)
+        self.configuration = configuration
+        self.consumer_throughput_queue = queue
+
+    def run(self):
+        # create a dictionary of lists
+        consumer_throughput_dict = defaultdict(list)
+
+        # Ignore the first entry for all consumers
+        consumer_dict = defaultdict()
+        while len(consumer_dict.keys()) < int(self.configuration["num_consumers"]):
+            try:
+                job = self.consumer_throughput_queue.reserve(timeout=1)
+                if job is None:
+                    continue
+
+                data = json.loads(job.body)
+                print(f"Ignoring data {data} on consumer throughput queue...")
+                consumer_dict[data["consumer_id"]] = 1
+
+                # Delete from queue
+                try:
+                    self.consumer_throughput_queue.delete(job)
+                except OSError as e:
+                    print(f"Warning: unable to delete job {job}, {e}", e)
+            except greenstalk.TimedOutError:
+                print("Timed out waiting for initial data on consumer throughput queue.")
+                pass
+
+        while not self.is_stopped():
+            try:
+                job = self.consumer_throughput_queue.reserve(timeout=1)
+
+                if job is None:
+                    print("Nothing on consumer throughput queue...")
+                    # sleep for 10ms
+                    time.sleep(.10)
+                    continue
+
+                data = json.loads(job.body)
+
+                print(f"Received data {data} on consumer throughput queue.")
+
+                consumer_id = data["consumer_id"]
+                throughput = data["throughput"]
+                num_producers = data["producer_count"]
+
+                # append to specific list (as stored in dict)
+                consumer_throughput_dict[consumer_id].append(throughput)
+
+                if len(consumer_throughput_dict[consumer_id]) >= 10:
+                    # truncate list to last 10 entries
+                    consumer_throughput_dict[consumer_id] = consumer_throughput_dict[consumer_id][-10:]
+
+                    consumer_throughput_average = mean(consumer_throughput_dict[consumer_id])
+                    print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+
+                    consumer_throughput_tolerance = (
+                            DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
+                    if consumer_throughput_average < consumer_throughput_tolerance:
+                        print(
+                            f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
+                        self.stop()
+
+                # Finally delete from queue
+                try:
+                    self.consumer_throughput_queue.delete(job)
+                except OSError as e:
+                    print(f"Warning: unable to delete job {job}, {e}", e)
+
+            except greenstalk.TimedOutError:
+                print("Warning: nothing in consumer throughput queue.")
+            except greenstalk.UnknownResponseError:
+                print("Warning: unknown response from beanstalkd server.")
+            except greenstalk.DeadlineSoonError:
+                print("Warning: job timeout in next second.")
+            except ConnectionError as ce:
+                print(f"Error: ConnectionError: {ce}")
+
+
+class ProducerIncrementProcess(StoppableProcess):
+
+    def __init__(self, configuration):
+        StoppableProcess.__init__(self)
+        self.configuration = configuration
+
+    def bash_command_with_output(self, additional_args, working_directory):
+        args = ['/bin/bash', '-e'] + additional_args
+        print(args)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
+        p.wait()
+        out = p.communicate()[0].decode("UTF-8")
+        return out
+
+    def k8s_scale_producers(self, producer_count):
+        filename = "./scale-producers.sh"
+        args = [filename, str(producer_count)]
+        self.bash_command_with_output(args, SCRIPT_DIR)
+
+    def get_producer_count(self):
+        filename = "./get-producers-count.sh"
+        args = [filename]
+
+        producer_count = 0
+        try:
+            producer_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
+        except ValueError:
+            pass
+
+        print(f"reported_producer_count={producer_count}")
+        return producer_count
+
+    def check_producers(self, expected_producer_count):
+        actual_producer_count = self.get_producer_count()
+        print(f"actual_producer_count={actual_producer_count}, expected_producer_count={expected_producer_count}")
+        if actual_producer_count == expected_producer_count:
+            return True
+        else:
+            return False
+
+    def run(self):
+        first_producer = True
+
+        # start at configured value
+        actual_producer_count = self.configuration["start_producer_count"]
+        while not self.is_stopped() and (actual_producer_count <= self.configuration["max_producer_count"]):
+            if not first_producer:
+                # Wait for a specified interval before starting the next producer
+                producer_increment_interval_sec = self.configuration["producer_increment_interval_sec"]
+                print(f"Waiting {producer_increment_interval_sec}s before starting next producer.")
+                time.sleep(producer_increment_interval_sec)
+            else:
+                first_producer = False
+
+            print(f"Starting producer {actual_producer_count}")
+
+            # Start a new producer
+            self.k8s_scale_producers(str(actual_producer_count))
+
+            time.sleep(PRODUCER_STARTUP_INTERVAL_S)
+
+            i = 1
+            check_producers = self.check_producers(actual_producer_count)
+            while not self.is_stopped() and not check_producers:
+                time.sleep(5)
+                check_producers = self.check_producers(actual_producer_count)
+                print(f"(Still) waiting for producer to start... ({i}/24)")
+                i += 1
+                if i > 24:
+                    print("Error: Timeout waiting for producer to start...")
+                    self.stop()
+
+            actual_producer_count += 1
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
