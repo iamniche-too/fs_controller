@@ -58,6 +58,8 @@ class Controller:
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
+                # wait for input to run configuration
+                input("Setup complete. Press any key to run the configuration...")
                 self.run_configuration(configuration)
 
             # now teardown and unprovision
@@ -229,9 +231,6 @@ class Controller:
         num_partitions = configuration["num_consumers"]
         self.k8s_deploy_kafka(num_partitions)
 
-        # deploy producers/consumers
-        self.k8s_deploy_producers_consumers()
-
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
 
@@ -240,11 +239,11 @@ class Controller:
             print("Aborting configuration - brokers not ok.")
             return False
 
+        # deploy producers/consumers
+        self.k8s_deploy_producers_consumers()
+
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
-
-        # Configure producers with required message size
-        self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
@@ -396,6 +395,10 @@ class Controller:
 
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
+
+        # Configure producers with required number of initial producers and their message size
+        # Note - number of producers may be
+        self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
 
         self.consumer_throughput_process = Process(target=self.check_consumer_throughput, args=(configuration,))
         self.consumer_throughput_process.start()

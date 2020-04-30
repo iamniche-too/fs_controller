@@ -21,9 +21,6 @@ class TestController(unittest.TestCase):
     def tearDown(self):
         self.queue.close()
 
-    def test_stop_threads(self):
-
-
     def test_consumer_throughput_queue(self):
         self.controller.flush_consumer_throughput_queue()
 
