@@ -1,7 +1,7 @@
 import subprocess
 import time
 import greenstalk
-import threading
+from multiprocessing import Process
 import requests
 import json
 import uuid
@@ -17,32 +17,34 @@ SCRIPT_DIR = "./scripts"
 TERRAFORM_DIR = "./terraform/"
 
 # set this to where-ever fs-kafka-k8s is cloned
-#KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
+# KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
 KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
-#PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
+# PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
 PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
-PRODUCER_STARTUP_INTERVAL_S=26
+PRODUCER_STARTUP_INTERVAL_S = 26
 
-# Cluster restarted: 29/04 @ 1041 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-53f4250eb059@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 30/04 @ 0939
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-a26ac9041cd9@kafka-k8s-trial.iam.gserviceaccount.com"
 
-CLUSTER_NAME="gke-kafka-cluster"
-CLUSTER_ZONE="europe-west2-a"
+CLUSTER_NAME = "gke-kafka-cluster"
+CLUSTER_ZONE = "europe-west2-a"
 
 ENDPOINT_URL = "http://focussensors.duckdns.org:9000/consumer_reporting_endpoint"
 stop_threads = False
 
+
 class Controller:
     configurations = []
 
-    consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
+    def __init__(self, queue):
+        self.consumer_throughput_queue = queue
 
     def post_json(self, endpoint_url, payload):
-      headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-      request = requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
 
     def run(self):
         self.load_configurations()
@@ -74,8 +76,8 @@ class Controller:
         # no flush() method exists in greenstalk so need to do it "brute force"
         print("Flushing consumer throughput queue")
 
-        # stats = self.consumer_throughput_queue.stats_tube("consumer_throughput")
-        # print(stats)
+        stats = self.consumer_throughput_queue.stats_tube("consumer_throughput")
+        print(stats)
 
         done = False
         while not done:
@@ -180,13 +182,13 @@ class Controller:
         actual_producer_count = self.get_producer_count()
         print(f"actual_producer_count={actual_producer_count}, expected_producer_count={expected_producer_count}")
         if actual_producer_count == expected_producer_count:
-          return True
+            return True
         else:
-          return False
+            return False
 
     def check_brokers_ok(self, configuration):
         i = 1
-        attempts = configuration["number_of_brokers"]*5
+        attempts = configuration["number_of_brokers"] * 5
         check_brokers = self.check_brokers(configuration["number_of_brokers"])
         while not check_brokers:
             # allow 20s per broker 
@@ -289,7 +291,7 @@ class Controller:
         global stop_threads
 
         # start at configured value
-        actual_producer_count = configuration["start_producer_count"] 
+        actual_producer_count = configuration["start_producer_count"]
         while stop_threads is False and (actual_producer_count <= configuration["max_producer_count"]):
             print(f"Starting producer {actual_producer_count}")
             # Start a new producer
@@ -297,7 +299,7 @@ class Controller:
 
             time.sleep(PRODUCER_STARTUP_INTERVAL_S)
 
-            i = 1 
+            i = 1
             check_producers = self.check_producers(actual_producer_count)
             while not check_producers:
                 time.sleep(5)
@@ -316,20 +318,37 @@ class Controller:
             actual_producer_count += 1
 
     def check_consumer_throughput(self, configuration):
+
         # create a dictionary of lists
         consumer_throughput_dict = defaultdict(list)
 
-        # Ignore the first 2 entries for all consumers
-        for i in range(configuration["num_consumers"]*2):
-          job = self.consumer_throughput_queue.reserve(timeout=5)
-          data = json.loads(job.body)
-          print(f"Ignoring data {data} on consumer throughput queue...")
-         
+        # Ignore the first entry for all consumers
+        consumer_dict = defaultdict()
+        while len(consumer_dict.keys()) < int(configuration["num_consumers"]):
+            try:
+                job = self.consumer_throughput_queue.reserve(timeout=1)
+                if job is None:
+                    continue
+
+                data = json.loads(job.body)
+                print(f"Ignoring data {data} on consumer throughput queue...")
+                consumer_dict[data["consumer_id"]] = 1
+            except greenstalk.TimedOutError:
+                print("Timed out waiting for initial data on consumer throughput queue.")
+                pass
+
         global stop_threads
 
         while stop_threads is False:
             try:
-                job = self.consumer_throughput_queue.reserve(timeout=5)
+                job = self.consumer_throughput_queue.reserve(timeout=0)
+
+                if job is None:
+                    print("Nothing on consumer throughput queue...")
+                    # sleep for 10ms
+                    time.sleep(.10)
+                    continue
+
                 data = json.loads(job.body)
 
                 print(f"Received data {data} on consumer throughput queue.")
@@ -348,36 +367,37 @@ class Controller:
                     consumer_throughput_average = mean(consumer_throughput_dict[consumer_id])
                     print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
-                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
+                    consumer_throughput_tolerance = (
+                                DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
                     if consumer_throughput_average < consumer_throughput_tolerance:
-                        print(f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
+                        print(
+                            f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
                         stop_threads = True
 
                 # Finally delete from queue
-                self.consumer_throughput_queue.delete(job)
+                try:
+                    self.consumer_throughput_queue.delete(job)
+                except OSError as e:
+                    print(f"Warning: unable to delete job {job}, {e}", e)
 
             except greenstalk.TimedOutError:
                 print("Warning: nothing in consumer throughput queue.")
             except greenstalk.UnknownResponseError:
                 print("Warning: unknown response from beanstalkd server.")
-            except greenstalk.ConnectionError as ce:
+            except ConnectionError as ce:
                 print(f"Error: ConnectionError: {ce}")
 
-            time.sleep(int(configuration["consumer_throughput_reporting_interval"]))
+        print(f"End of function.")
 
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
+        
+        process2 = Process(target=self.check_consumer_throughput, args=(configuration,))
+        process2.start()
 
-        thread1 = threading.Thread(target=self.increment_producers_thread, args=(configuration,))
-        thread1.start()
-        time.sleep(5)
-
-        thread2 = threading.Thread(target=self.check_consumer_throughput, args=(configuration,))
-        thread2.start()
-
-        thread1.join()
-        # no need to wait for second thread to finish
-        # thread2.join()
+        process1 = Process(target=self.increment_producers_thread, args=(configuration,))
+        process1.start()
+        process1.join()
 
         print(f"Run completed for configuration {configuration}")
 
@@ -386,21 +406,23 @@ class Controller:
 
         configuration_uid = str(uuid.uuid4().hex.upper()[0:6])
 
-        #configuration_3_750_n1_standard_1 = {
+        # configuration_3_750_n1_standard_1 = {
         configuration_template = {
-                "configuration_uid": configuration_uid,
-                "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 3, "max_producer_count": 9, "num_consumers": 3,
-                "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
-                "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
+            "configuration_uid": configuration_uid,
+            "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 3, "max_producer_count": 9,
+            "num_consumers": 3,
+            "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
+            "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
 
         self.configurations.append(dict(configuration_template))
-        #self.configurations.append(dict(configuration_template, message_size_kb=7500))
+        # self.configurations.append(dict(configuration_template, message_size_kb=7500))
 
     def provision_node_pool(self, configuration):
         print(f"\r\n1. Provisioning node pool: {configuration}")
 
         filename = "./generate-kafka-node-pool.sh"
-        args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], str(configuration["disk_type"]), str(configuration["disk_size"])]
+        args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], str(configuration["disk_type"]),
+                str(configuration["disk_size"])]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
 
         filename = "./generate-zk-node-pool.sh"
@@ -420,8 +442,11 @@ class Controller:
         self.bash_command_with_wait(args, TERRAFORM_DIR)
         print("Node pool unprovisioned.")
 
+
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
     print("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
-    c = Controller()
+    consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
+    c = Controller(consumer_throughput_queue)
+    c.flush_consumer_throughput_queue()
     c.run()
