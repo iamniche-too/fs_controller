@@ -341,7 +341,7 @@ class Controller:
 
         while stop_threads is False:
             try:
-                job = self.consumer_throughput_queue.reserve(timeout=0)
+                job = self.consumer_throughput_queue.reserve(timeout=1)
 
                 if job is None:
                     print("Nothing on consumer throughput queue...")
@@ -384,6 +384,8 @@ class Controller:
                 print("Warning: nothing in consumer throughput queue.")
             except greenstalk.UnknownResponseError:
                 print("Warning: unknown response from beanstalkd server.")
+            except greenstalk.DeadlineSoonError:
+                print("Warning: job timeout in next second.")
             except ConnectionError as ce:
                 print(f"Error: ConnectionError: {ce}")
 
@@ -391,7 +393,7 @@ class Controller:
 
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
-        
+
         process2 = Process(target=self.check_consumer_throughput, args=(configuration,))
         process2.start()
 
