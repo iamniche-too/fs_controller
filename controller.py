@@ -27,8 +27,8 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S = 26
 
-# Cluster restarted: 30/04 @ 0939
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-a26ac9041cd9@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 04/05 @ 1218
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-b433f3f723ab@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
