@@ -103,8 +103,11 @@ class Controller:
 
     def stop_threads(self):
         print("Stop threads called.")
-        self.producer_increment_process.stop()
-        self.consumer_throughput_process.stop()
+        if self.producer_increment_process:
+            self.producer_increment_process.stop()
+
+        if self.consumer_throughput_process:
+            self.consumer_throughput_process.stop()
 
     def teardown_configuration(self, configuration):
         print(f"\r\n4. Teardown configuration: {configuration}")
