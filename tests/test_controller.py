@@ -1,8 +1,6 @@
 import json
 import time
 import unittest
-from multiprocessing import Process
-
 import greenstalk
 
 from controller import Controller, CheckConsumerThroughputProcess

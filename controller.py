@@ -22,6 +22,7 @@ TERRAFORM_DIR = "./terraform/"
 KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
 # PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
 PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
+BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
@@ -125,39 +126,46 @@ class Controller:
 
     # run a script to deploy kafka
     def k8s_deploy_kafka(self, num_partitions):
-        print(f"k8s_deploy_kafka")
+        print(f"Deploying Kafka and ZK...")
         filename = "./deploy.sh"
         args = [filename, str(num_partitions)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
-    # run a script to deploy kafka
+    # run a script to deploy producers/consumers
+    def k8s_deploy_burrow(self):
+        print(f"Deploying Burrow...")
+        filename = "./deploy.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, BURROW_DIR)
+
+    # run a script to deploy producers/consumers
     def k8s_deploy_producers_consumers(self):
-        print(f"k8s_deploy_producers_consumers")
+        print(f"Deploying producers/consumers")
         filename = "./deploy/gcp/deploy.sh"
         args = [filename]
         self.bash_command_with_wait(args, PRODUCERS_CONSUMERS_DEPLOY_DIR)
 
     def k8s_scale_brokers(self, broker_count):
-        print(f"k8s_scale_brokers, broker_count={broker_count}")
+        print(f"Scaling brokers, broker_count={broker_count}")
         # run a script to start brokers
         filename = "./scale-brokers.sh"
         args = [filename, str(broker_count)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_configure_producers(self, start_producer_count, message_size):
-        print(f"k8s_configure_producers, start_producer_count={start_producer_count}, message_size={message_size}")
+        print(f"Configure producers, start_producer_count={start_producer_count}, message_size={message_size}")
         filename = "./configure-producers.sh"
         args = [filename, str(start_producer_count), str(message_size)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_scale_consumers(self, num_consumers):
-        print(f"k8s_configure_consumers, num_consumers={num_consumers}")
+        print(f"Configure consumers, num_consumers={num_consumers}")
         filename = "./scale-consumers.sh"
         args = [filename, str(num_consumers)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def check_k8s(self):
-        print(f"check_k8s")
+        print(f"Checking K8S...")
         filename = "./check_k8s.sh"
         args = [filename]
         output = self.bash_command_with_output(args, SCRIPT_DIR)
@@ -232,6 +240,9 @@ class Controller:
         if not all_ok:
             print("Aborting configuration - brokers not ok.")
             return False
+
+        # deploy burrow
+        self.k8s_deploy_burrow()
 
         # deploy producers/consumers
         self.k8s_deploy_producers_consumers()
@@ -322,7 +333,7 @@ class Controller:
 class CheckConsumerThroughputProcess(StoppableProcess):
 
     def __init__(self, configuration, queue):
-        StoppableProcess.__init__(self)
+        super().__init__()
         self.configuration = configuration
         self.consumer_throughput_queue = queue
 
@@ -405,7 +416,7 @@ class CheckConsumerThroughputProcess(StoppableProcess):
 class ProducerIncrementProcess(StoppableProcess):
 
     def __init__(self, configuration):
-        StoppableProcess.__init__(self)
+        super().__init__()
         self.configuration = configuration
 
     def bash_command_with_output(self, additional_args, working_directory):
