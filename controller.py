@@ -250,11 +250,9 @@ class Controller:
         self.k8s_deploy_burrow()
 
         # wait for burrow external IP to be assigned
-        then = datetime.now()
-        input("Press when Burrow IP appears...")
-        now = datetime.now()
-        print(f"Time taken for IP assignment {now-then}")
-        
+        print("Waiting 60s for Burrow external IP...")
+        time.sleep(60)
+
         # deploy producers/consumers
         self.k8s_deploy_producers_consumers()
 
