@@ -1,5 +1,7 @@
 import subprocess
 import time
+from datetime import datetime
+
 import greenstalk
 import requests
 import json
@@ -28,8 +30,8 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S = 26
 
-# Cluster restarted: 04/05 @ 1218
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-b433f3f723ab@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 06/05 @ 0812
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-1d4b68bffb1e@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
@@ -247,6 +249,12 @@ class Controller:
         # deploy burrow
         self.k8s_deploy_burrow()
 
+        # wait for burrow external IP to be assigned
+        then = datetime.now()
+        input("Press when Burrow IP appears...")
+        now = datetime.now()
+        print(f"Time taken for IP assignment {now-then}")
+        
         # deploy producers/consumers
         self.k8s_deploy_producers_consumers()
 
