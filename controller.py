@@ -63,7 +63,7 @@ class Controller:
             # only run if everything is ok
             if self.setup_configuration(configuration):
                 # wait for input to run configuration
-                print("Setup complete.")
+                input("Setup complete. Press any key to run the configuration...")
                 self.run_configuration(configuration)
                 self.consumer_throughput_process.join()
 
@@ -142,6 +142,10 @@ class Controller:
         filename = "./deploy.sh"
         args = [filename]
         self.bash_command_with_wait(args, BURROW_DIR)
+
+        # now wait for burrow external IP to be assigned
+        print("Waiting 60s for Burrow external IP...")
+        time.sleep(60)
 
     # run a script to deploy producers/consumers
     def k8s_deploy_producers_consumers(self):
@@ -246,18 +250,14 @@ class Controller:
             print("Aborting configuration - brokers not ok.")
             return False
 
-        # deploy burrow
-        self.k8s_deploy_burrow()
-
-        # wait for burrow external IP to be assigned
-        print("Waiting 60s for Burrow external IP...")
-        time.sleep(60)
-
         # deploy producers/consumers
         self.k8s_deploy_producers_consumers()
 
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
+
+        # deploy burrow
+        self.k8s_deploy_burrow()
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
