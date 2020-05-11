@@ -308,7 +308,7 @@ class Controller:
             "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 9,
             "num_consumers": 3,
             "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
-            "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
+            "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True}
 
         self.configurations.append(dict(configuration_template))
         # self.configurations.append(dict(configuration_template, message_size_kb=7500))
@@ -389,22 +389,23 @@ class CheckConsumerThroughputProcess(StoppableProcess):
                 throughput = data["throughput"]
                 num_producers = data["producer_count"]
 
-                # append to specific list (as stored in dict)
-                consumer_throughput_dict[consumer_id].append(throughput)
+                if not self.configuration["ignore_throughput_threshold"]:
+                    # append to specific list (as stored in dict)
+                    consumer_throughput_dict[consumer_id].append(throughput)
 
-                if len(consumer_throughput_dict[consumer_id]) >= 10:
-                    # truncate list to last 10 entries
-                    consumer_throughput_dict[consumer_id] = consumer_throughput_dict[consumer_id][-10:]
+                    if len(consumer_throughput_dict[consumer_id]) >= 10:
+                        # truncate list to last 10 entries
+                        consumer_throughput_dict[consumer_id] = consumer_throughput_dict[consumer_id][-10:]
 
-                    consumer_throughput_average = mean(consumer_throughput_dict[consumer_id])
-                    print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                        consumer_throughput_average = mean(consumer_throughput_dict[consumer_id])
+                        print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
-                    consumer_throughput_tolerance = (
-                            DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
-                    if consumer_throughput_average < consumer_throughput_tolerance:
-                        print(
-                            f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
-                        self.stop()
+                        consumer_throughput_tolerance = (
+                                DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
+                        if consumer_throughput_average < consumer_throughput_tolerance:
+                            print(
+                                f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
+                            self.stop()
 
                 # Finally delete from queue
                 try:
