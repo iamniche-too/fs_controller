@@ -345,6 +345,7 @@ class CheckConsumerThroughputProcess(StoppableProcess):
         super().__init__()
         self.configuration = configuration
         self.consumer_throughput_queue = queue
+        self.threshold_exceeded = 0
 
     def run(self):
         # create a dictionary of lists
@@ -404,8 +405,15 @@ class CheckConsumerThroughputProcess(StoppableProcess):
                                 DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
                         if consumer_throughput_average < consumer_throughput_tolerance:
                             print(
-                                f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}, exiting...")
-                            self.stop()
+                                f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}")
+                            self.threshold_exceeded += 1
+
+                            # clear the list of entries for the given consumer
+                            consumer_throughput_dict[consumer_id].clear()
+
+                            if self.threshold_exceeded == 3:
+                                print("Stopping after 3 threshold events...")
+                                self.stop()
 
                 # Finally delete from queue
                 try:
@@ -496,6 +504,7 @@ class ProducerIncrementProcess(StoppableProcess):
                     self.stop()
 
             actual_producer_count += 1
+
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
