@@ -130,10 +130,10 @@ class Controller:
         self.unprovision_node_pool(configuration)
 
     # run a script to deploy kafka
-    def k8s_deploy_kafka(self, num_partitions):
+    def k8s_deploy_kafka(self, num_partitions, num_brokers):
         print(f"Deploying Kafka and ZK...")
         filename = "./deploy.sh"
-        args = [filename, str(num_partitions)]
+        args = [filename, str(num_partitions), str(num_brokers)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     # run a script to deploy producers/consumers
@@ -240,7 +240,8 @@ class Controller:
         # deploy kafka brokers
         # where num_partitions = num_consumers
         num_partitions = configuration["num_consumers"]
-        self.k8s_deploy_kafka(num_partitions)
+        num_brokers = configuration["number_of_brokers"]
+        self.k8s_deploy_kafka(num_partitions, num_brokers)
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
