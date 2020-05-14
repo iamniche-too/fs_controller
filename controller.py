@@ -307,7 +307,7 @@ class Controller:
         configuration_template = {
             "configuration_uid": configuration_uid,
             "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 9,
-            "num_consumers": 2,
+            "num_consumers": 3,
             "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
             "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True}
 
