@@ -63,7 +63,7 @@ class Controller:
             # only run if everything is ok
             if self.setup_configuration(configuration):
                 # wait for input to run configuration
-                input("Setup complete. Press any key to run the configuration...")
+                # input("Setup complete. Press any key to run the configuration...")
                 self.run_configuration(configuration)
                 self.consumer_throughput_process.join()
 
