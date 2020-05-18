@@ -254,9 +254,6 @@ class Controller:
         # deploy producers/consumers
         self.k8s_deploy_producers_consumers()
 
-        # scale consumers
-        self.k8s_scale_consumers(str(configuration["num_consumers"]))
-
         # deploy burrow
         self.k8s_deploy_burrow()
 
@@ -287,6 +284,9 @@ class Controller:
 
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
+
+        # scale consumers
+        self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
         # Configure producers with required number of initial producers and their message size
         # Note - number of producers may be
