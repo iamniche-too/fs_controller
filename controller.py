@@ -185,6 +185,19 @@ class Controller:
         else:
             return True
 
+    def get_zookeepers_count(self):
+        filename = "./get-zookeepers-count.sh"
+        args = [filename]
+
+        zk_count = 0
+        try:
+            zk_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
+        except ValueError:
+            pass
+
+        print(f"zk={zk_count}")
+        return zk_count
+
     def get_broker_count(self):
         filename = "./get-brokers-count.sh"
         args = [filename]
@@ -257,6 +270,9 @@ class Controller:
         # deploy burrow
         self.k8s_deploy_burrow()
 
+        # scale consumers
+        self.k8s_scale_consumers(str(configuration["num_consumers"]))
+        
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
 
@@ -284,9 +300,6 @@ class Controller:
 
     def run_configuration(self, configuration):
         print(f"\r\n3. Running configuration: {configuration}")
-
-        # scale consumers
-        self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
         # Configure producers with required number of initial producers and their message size
         # Note - number of producers may be
