@@ -30,7 +30,7 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S = 26
 
-# Cluster restarted: 18/05 @0945
+# Cluster restarted: 20/05 @ 0951 
 SERVICE_ACCOUNT_EMAIL = "cluster-minimal-62b1542a102b@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
@@ -214,6 +214,26 @@ class Controller:
     def check_brokers(self, expected_broker_count):
         return self.get_broker_count() == expected_broker_count
 
+    def check_zookeepers(self, expected_zk_count):
+        return self.get_zookeepers_count() == expected_zk_count
+
+    def check_zookeepers_ok(self):
+        i = 1
+        attempts = 7
+        check_zks = self.check_zookeepers(3)
+        while not check_zks:
+            time.sleep(20)
+
+            check_zks = self.check_zookeepers(3)
+            print(f"Waiting for zks to start...{i}/{attempts}")
+            i += 1
+            if i > attempts:
+                print("Error: Time-out waiting for zks to start.")
+                return False
+
+        print("ZKs started ok.")
+        return True
+
     def check_brokers_ok(self, configuration):
         i = 1
         attempts = configuration["number_of_brokers"] * 5
@@ -321,7 +341,11 @@ class Controller:
             "configuration_uid": configuration_uid,
             "number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 9,
             "num_consumers": 3,
+<<<<<<< HEAD
             "producer_increment_interval_sec": 60, "machine_size": "n1-highmem-2", "disk_size": 100,
+=======
+            "producer_increment_interval_sec": 90, "machine_size": "n1-highmem-2", "disk_size": 100,
+>>>>>>> 88db1183f10bd74c0300deaafdff3c980528eb3d
             "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True}
 
         self.configurations.append(dict(configuration_template))
