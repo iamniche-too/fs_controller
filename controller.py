@@ -352,7 +352,7 @@ class Controller:
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], str(configuration["disk_type"]),
-                str(configuration["disk_size"], str(configuration["number_of_brokers"])]
+                str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
 
         filename = "./generate-zk-node-pool.sh"
