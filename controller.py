@@ -130,10 +130,10 @@ class Controller:
         self.unprovision_node_pool(configuration)
 
     # run a script to deploy kafka
-    def k8s_deploy_kafka(self, num_partitions, num_brokers):
+    def k8s_deploy_kafka(self, num_brokers):
         print(f"Deploying Kafka and ZK...")
         filename = "./deploy.sh"
-        args = [filename, str(num_partitions), str(num_brokers)]
+        args = [filename, str(num_brokers)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     # run a script to deploy producers/consumers
@@ -271,10 +271,9 @@ class Controller:
             print("Warning - Check K8S Services (fewer services running than expected).")
 
         # deploy kafka brokers
-        # where num_partitions = num_consumers
-        num_partitions = configuration["num_consumers"]
+        # where num_partitions = number_of_brokers (or a multiple thereof!) 
         num_brokers = configuration["number_of_brokers"]
-        self.k8s_deploy_kafka(num_partitions, num_brokers)
+        self.k8s_deploy_kafka(num_brokers)
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
@@ -339,7 +338,7 @@ class Controller:
         # configuration_3_750_n1_standard_1 = {
         configuration_template = {
             "configuration_uid": configuration_uid,
-            "number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 9,
+            "number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 15,
             "num_consumers": 3,
             "producer_increment_interval_sec": 60, "machine_size": "n1-highmem-2", "disk_size": 100,
             "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True}
