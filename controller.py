@@ -31,7 +31,7 @@ DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S = 26
 
 # Cluster restarted: 18/05 @0945
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-c5f462685368@kafka-k8s-trial.iam.gserviceaccount.com"
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-62b1542a102b@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
@@ -319,9 +319,9 @@ class Controller:
         # configuration_3_750_n1_standard_1 = {
         configuration_template = {
             "configuration_uid": configuration_uid,
-            "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 9,
+            "number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 9,
             "num_consumers": 3,
-            "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
+            "producer_increment_interval_sec": 60, "machine_size": "n1-highmem-2", "disk_size": 100,
             "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True}
 
         self.configurations.append(dict(configuration_template))
@@ -332,7 +332,7 @@ class Controller:
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], str(configuration["disk_type"]),
-                str(configuration["disk_size"])]
+                str(configuration["disk_size"], configuration["number_of_brokers"])
         self.bash_command_with_wait(args, TERRAFORM_DIR)
 
         filename = "./generate-zk-node-pool.sh"

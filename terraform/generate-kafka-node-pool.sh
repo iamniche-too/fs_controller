@@ -2,15 +2,16 @@ SERVICE_ACCOUNT_EMAIL=$1
 MACHINE_TYPE=$2
 DISK_TYPE=$3
 DISK_SIZE=$4
+NUM_BROKERS=$5
 
-echo "Configuring with SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL, MACHINE_TYPE=$MACHINE_TYPE, DISK_TYPE=$DISK_TYPE, DISK_SIZE=$3"
+echo "Configuring with SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL, MACHINE_TYPE=$MACHINE_TYPE, DISK_TYPE=$DISK_TYPE, DISK_SIZE=$DISK_SIZE, NUM_BROKERS=$NUM_BROKERS"
 cat <<EOF > ./kafka-node-pool-generated.tf
 # https://www.terraform.io/docs/providers/google/r/container_node_pool.html
 resource "google_container_node_pool" "kafka_node_pool" {
   # The location (region or zone) in which the cluster resides
   location = "europe-west2-a" 
 
-  count = 3 
+  count = 5 
 
   # The name of the node pool. Instance groups created will have the cluster
   # name prefixed automatically.
@@ -19,15 +20,15 @@ resource "google_container_node_pool" "kafka_node_pool" {
   # The cluster to create the node pool for.
   cluster = "gke-kafka-cluster"
 
-  initial_node_count = 3 
+  initial_node_count = $NUM_BROKERS 
 
   # Configuration required by cluster autoscaler to adjust the size of the node pool to the current cluster usage.
   autoscaling {
     # Minimum number of nodes in the NodePool. Must be >=0 and <= max_node_count.
-    min_node_count = 3 
+    min_node_count = "$NUM_BROKERS"
 
     # Maximum number of nodes in the NodePool. Must be >= min_node_count.
-    max_node_count = 7 
+    max_node_count = "$NUM_BROKERS"
   }
 
   # Node management configuration, wherein auto-repair and auto-upgrade is configured.
