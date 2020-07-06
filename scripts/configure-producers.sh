@@ -28,7 +28,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                - key: producer-consumer-node 
+                - key: producer-node 
                   operator: In
                   values: ["true"]
         podAntiAffinity:
@@ -37,7 +37,7 @@ spec:
                 matchExpressions:
                   - key: app
                     operator: In
-                    values: ["producer", "consumer"]
+                    values: ["producer"]
               topologyKey: "kubernetes.io/hostname"
       initContainers:
         - name: git-repo

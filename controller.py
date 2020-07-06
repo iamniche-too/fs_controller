@@ -30,8 +30,8 @@ DEFAULT_CONSUMER_TOLERANCE = 0.9
 DEFAULT_THROUGHPUT_MB_S = 75
 PRODUCER_STARTUP_INTERVAL_S = 26
 
-# Cluster restarted: 20/05 @ 0951 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-62b1542a102b@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 06/07 
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-54221950f5f6@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
@@ -127,13 +127,16 @@ class Controller:
         self.flush_consumer_throughput_queue()
 
         # finally take down the kafka node pool
-        self.unprovision_node_pool(configuration)
+        if configuration["teardown_broker_nodes"]:
+          self.unprovision_node_pool(configuration)
+        else:
+          print("Broker nodes left standing."`
 
     # run a script to deploy kafka
-    def k8s_deploy_kafka(self, num_brokers):
-        print(f"Deploying Kafka and ZK...")
+    def k8s_deploy_kafka(self, num_partitions):
+        print(f"Deploying Kafka with {num_partitions} partitions...")
         filename = "./deploy.sh"
-        args = [filename, str(num_brokers)]
+        args = [filename, str(num_partitions)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     # run a script to deploy producers/consumers
@@ -271,9 +274,10 @@ class Controller:
             print("Warning - Check K8S Services (fewer services running than expected).")
 
         # deploy kafka brokers
-        # where num_partitions = number_of_brokers (or a multiple thereof!) 
-        num_brokers = configuration["number_of_brokers"]
-        self.k8s_deploy_kafka(num_brokers)
+        # where num_partitions = max(#P, #C), where #P = TT / 75)
+        # see https://docs.cloudera.com/runtime/7.1.0/kafka-performance-tuning/topics/kafka-tune-sizing-partition-number.html 
+        num_partitions = configuration["number_of_brokers"] * 3 
+        self.k8s_deploy_kafka(num_partitions)
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
@@ -338,10 +342,11 @@ class Controller:
         # configuration_3_750_n1_standard_1 = {
         configuration_template = {
             "configuration_uid": configuration_uid,
-            "number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 15,
+            "number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 9, "max_producer_count": 15,
             "num_consumers": 3,
-            "producer_increment_interval_sec": 60, "machine_size": "n1-highmem-2", "disk_size": 100,
-            "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True}
+            "producer_increment_interval_sec": 0, "machine_size": "n1-highmem-4", "disk_size": 100,
+            #"producer_increment_interval_sec": 0, "machine_size": "n1-standard-8", "disk_size": 100,
+            "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True, "teardown_broker_nodes": False}
 
         self.configurations.append(dict(configuration_template))
         # self.configurations.append(dict(configuration_template, message_size_kb=7500))
