@@ -130,7 +130,7 @@ class Controller:
         if configuration["teardown_broker_nodes"]:
           self.unprovision_node_pool(configuration)
         else:
-          print("Broker nodes left standing."`
+          print("Broker nodes left standing.")
 
     # run a script to deploy kafka
     def k8s_deploy_kafka(self, num_partitions):
