@@ -1,6 +1,6 @@
 import unittest
 
-from controller import Controller
+from fs.controller import Controller
 
 
 class IntegrationTestK8SCount(unittest.TestCase):

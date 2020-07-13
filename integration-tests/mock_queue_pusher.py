@@ -4,7 +4,7 @@ from statistics import mean
 
 import greenstalk
 
-from controller import DEFAULT_THROUGHPUT_MB_S, DEFAULT_CONSUMER_TOLERANCE
+from fs.controller import DEFAULT_THROUGHPUT_MB_S, DEFAULT_CONSUMER_TOLERANCE
 
 
 def threaded(fn):

@@ -3,7 +3,7 @@ import time
 import unittest
 import greenstalk
 
-from controller import Controller, CheckConsumerThroughputProcess
+from fs.controller import Controller, CheckConsumerThroughputProcess, SoakTestProcess
 
 
 # IMPORTANT: Please set the directory to be the root directory NOT /tests/
@@ -17,6 +17,29 @@ class TestController(unittest.TestCase):
 
     def tearDown(self):
         self.queue.close()
+
+    def test_run_soak_test(self):
+        self.controller.flush_consumer_throughput_queue()
+
+        self.queue.put(json.dumps({'consumer_id': 'AAAAA', 'throughput': 75, 'producer_count': 1}))
+        self.queue.put(json.dumps({'consumer_id': 'BBBBB', 'throughput': 75, 'producer_count': 1}))
+        self.queue.put(json.dumps({'consumer_id': 'CCCCC', 'throughput': 75, 'producer_count': 1}))
+
+        configuration = {
+            "configuration_uid": "68ED2AB",
+            "number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 3, "max_producer_count": 9,
+            "num_consumers": 3,
+            "producer_increment_interval_sec": 180, "machine_size": "n1-highmem-2", "disk_size": 100,
+            "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
+
+        soak_test_process = SoakTestProcess(configuration, self.queue)
+
+        # start the thread for soak test
+        soak_test_process.start()
+
+        time.sleep(10)
+
+        soak_test_process.stop()
 
     def test_run_configuration(self):
         self.controller.flush_consumer_throughput_queue()

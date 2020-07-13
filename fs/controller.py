@@ -1,42 +1,16 @@
 import subprocess
 import time
-from datetime import datetime
-
-import threading
 import greenstalk
 import requests
 import json
 import uuid
-from statistics import mean
-from collections import defaultdict
+from fs.check_consumer_throughput_process import CheckConsumerThroughputProcess
+from fs.producer_increment_process import ProducerIncrementProcess
+from fs.soak_test_process import SoakTestProcess
+from fs.utils import SCRIPT_DIR, PRODUCER_CONSUMER_NAMESPACE, KAFKA_NAMESPACE, KAFKA_DEPLOY_DIR, BURROW_DIR, \
+    PRODUCERS_CONSUMERS_DEPLOY_DIR, K8S_SERVICE_COUNT, CLUSTER_NAME, CLUSTER_ZONE, TERRAFORM_DIR, SERVICE_ACCOUNT_EMAIL, \
+    ENDPOINT_URL
 
-# Ranges between 22-50+
-from stoppable_process import StoppableProcess
-
-K8S_SERVICE_COUNT = 22
-
-PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
-KAFKA_NAMESPACE = "kafka"
-SCRIPT_DIR = "./scripts"
-TERRAFORM_DIR = "./terraform/"
-
-# set this to where-ever fs-kafka-k8s is cloned
-# KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
-KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
-# PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
-PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
-BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
-
-DEFAULT_CONSUMER_TOLERANCE = 0.85
-DEFAULT_THROUGHPUT_MB_S = 75
-
-# Cluster restarted: 08/07 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-76536cff2f28@kafka-k8s-trial.iam.gserviceaccount.com"
-
-CLUSTER_NAME = "gke-kafka-cluster"
-CLUSTER_ZONE = "europe-west2-a"
-
-ENDPOINT_URL = "http://focussensors.duckdns.org:9000/consumer_reporting_endpoint"
 stop_threads = False
 
 
@@ -105,7 +79,7 @@ class Controller:
 
     def stop_threads(self):
         print("Stop threads called.")
-        
+
         if self.producer_increment_process:
             self.producer_increment_process.stop()
 
@@ -279,8 +253,8 @@ class Controller:
 
         # deploy kafka brokers
         # where num_partitions = max(#P, #C), where #P = TT / 75)
-        # see https://docs.cloudera.com/runtime/7.1.0/kafka-performance-tuning/topics/kafka-tune-sizing-partition-number.html 
-        num_partitions = configuration["number_of_brokers"] * 3 
+        # see https://docs.cloudera.com/runtime/7.1.0/kafka-performance-tuning/topics/kafka-tune-sizing-partition-number.html
+        num_partitions = configuration["number_of_brokers"] * 3
         self.k8s_deploy_kafka(num_partitions)
 
         # Configure # kafka brokers
@@ -325,10 +299,10 @@ class Controller:
 
         return True
 
-    def run_stress_test(self, configuration):
+    def run_stress_test(self, configuration, queue):
         print(f"\r\n3. Running stress test.")
-        self.consumer_throughput_process = CheckConsumerThroughputProcess(configuration, self.consumer_throughput_queue)
-        self.producer_increment_process = ProducerIncrementProcess(configuration, self.consumer_throughput_process)
+        self.consumer_throughput_process = CheckConsumerThroughputProcess(configuration, queue)
+        self.producer_increment_process = ProducerIncrementProcess(configuration, queue)
 
         self.consumer_throughput_process.start()
         self.producer_increment_process.start()
@@ -337,13 +311,15 @@ class Controller:
         # i.e. on degradation event
         self.consumer_throughput_process.join()
 
-        # degradation occurred, stop the increment thread
+        # degradation occurred, stop the producer increment thread
         self.producer_increment_process.stop()
 
         print(f"\r\n3. Stress test completed.")
 
-    def run_soak_test(self, configuration):
+    def run_soak_test(self, configuration, queue):
         print(f"\r\n3. Running soak test.")
+
+        self.soak_test_process = SoakTestProcess(configuration, queue)
 
         # start the thread for soak test
         self.soak_test_process.start()
@@ -361,10 +337,10 @@ class Controller:
         self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
 
         # run stress test
-        self.run_stress_test(configuration)
+        self.run_stress_test(configuration, self.consumer_throughput_queue)
 
         # run soak test
-        self.run_soak_test(configuration)
+        self.run_soak_test(configuration, self.consumer_throughput_queue)
 
     def get_configuration_uid(self):
         return str(uuid.uuid4().hex.upper()[0:6])
@@ -419,299 +395,6 @@ class Controller:
         self.bash_command_with_wait(args, TERRAFORM_DIR)
         print("Node pool unprovisioned.")
 
-
-class SoakTestThread(StoppableProcess):
-
-    def __init__(self, configuration, queue):
-        super().__init__()
-
-        self.configuration = configuration
-        self.consumer_throughput_queue = queue
-
-    def bash_command_with_output(self, additional_args, working_directory):
-        args = ['/bin/bash', '-e'] + additional_args
-        print(args)
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
-        p.wait()
-        out = p.communicate()[0].decode("UTF-8")
-        return out
-
-    def k8s_scale_producers(self, producer_count):
-        filename = "./scale-producers.sh"
-        args = [filename, str(producer_count)]
-        self.bash_command_with_output(args, SCRIPT_DIR)
-
-    def get_producer_count(self):
-        filename = "./get-producers-count.sh"
-        args = [filename]
-
-        producer_count = 0
-        try:
-            producer_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
-        except ValueError:
-            pass
-
-        return producer_count
-
-    def decrement_producer_count(self):
-        producer_count = self.get_producer_count()
-        print(f"Current producer count is {producer_count}")
-
-        # decrement the producer count
-        producer_count -= 1
-
-        # decrement the producer count
-        self.k8s_scale_producers(producer_count)
-        print(f"Decrementing the producer count to {producer_count}")
-
-    def run(self):
-        num_brokers = self.configuration["num_brokers"]
-
-        self.decrement_producer_count()
-
-        # decrement the producers further until stability is achieved
-        while not self.is_stopped():
-            try:
-                # check the queue
-                job = self.consumer_throughput_queue.reserve(timeout=1)
-
-                if job is None:
-                    print("Nothing on consumer throughput queue...")
-                    # sleep for 10ms
-                    time.sleep(.10)
-                    continue
-
-                data = json.loads(job.body)
-
-                # print(f"Received data {data} on consumer throughput queue.")
-
-                consumer_id = data["consumer_id"]
-                throughput = data["throughput"]
-                num_producers = data["producer_count"]
-
-                # append to specific list (as stored in dict)
-                self.consumer_throughput_dict[consumer_id].append(throughput)
-
-                if len(self.consumer_throughput_dict[consumer_id]) >= 3:
-                    # truncate list to last 3 entries
-                    self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-3:]
-
-                    consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
-                    print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
-
-                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
-
-                    if consumer_throughput_average < consumer_throughput_tolerance:
-                        print(f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}")
-                        self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
-
-                        # stop after 3 consecutive threshold events
-                        if self.threshold_exceeded[consumer_id] >= 3:
-                            print("Threshold (still exceeded) decrementing producer count")
-                            self.decrement_producer_count()
-                        else:
-                            # reset the threshold events (since they must be consecutive to force an event)
-                            self.threshold_exceeded[consumer_id] = 0
-
-        num_producers = self.get_producer_count()
-        print(f"Throughput stability achieved @ {num_producers} producers.")
-
-        # start soak test once stability achieved
-        soak_test_s = (313 * num_brokers) / num_producers
-        print(f"Running soak test for {soak_test_s} seconds.")
-
-        start_time = time.now()
-        while not self.is_stopped() and ((time.now() - start_time) < soak_test_s):
-            try:
-                # check the queue
-                job = self.consumer_throughput_queue.reserve(timeout=1)
-
-                if job is None:
-                    # print("Nothing on consumer throughput queue...")
-                    # sleep for 10ms
-                    time.sleep(.10)
-                    continue
-
-                data = json.loads(job.body)
-                print(f"Received data {data} on consumer throughput queue.")
-
-                # Finally delete from queue
-                try:
-                    self.consumer_throughput_queue.delete(job)
-                except OSError as e:
-                    print(f"Warning: unable to delete job {job}, {e}", e)
-
-            except greenstalk.TimedOutError:
-                print("Warning: nothing in consumer throughput queue.")
-            except greenstalk.UnknownResponseError:
-                print("Warning: unknown response from beanstalkd server.")
-            except greenstalk.DeadlineSoonError:
-                print("Warning: job timeout in next second.")
-            except ConnectionError as ce:
-                print(f"Error: ConnectionError: {ce}")
-
-        print(f"Soak test completed after {soak_test_s} seconds.")
-
-
-class CheckConsumerThroughputProcess(StoppableProcess):
-
-    def __init__(self, configuration, queue):
-        super().__init__()
-        self.configuration = configuration
-        self.consumer_throughput_queue = queue
-        self.threshold_exceeded = {} 
-        self.consumer_throughput_dict = defaultdict(list)
-        self.lock = threading.Lock()
-
-    def clear_consumer_throughput(self):
-       with self.lock:
-           for key in self.consumer_throughput_dict.keys():
-               self.consumer_throughput_dict[key].clear()
-       print("Flushed consumer throughput values.")
-
-    def run(self):
-        # Ignore the first entry for all consumers
-        consumer_dict = defaultdict()
-        while len(consumer_dict.keys()) < int(self.configuration["num_consumers"]):
-            try:
-                job = self.consumer_throughput_queue.reserve(timeout=1)
-                if job is None:
-                    continue
-
-                data = json.loads(job.body)
-                print(f"Ignoring data {data} on consumer throughput queue...")
-                consumer_dict[data["consumer_id"]] = 1
-
-                # Delete from queue
-                try:
-                    self.consumer_throughput_queue.delete(job)
-                except OSError as e:
-                    print(f"Warning: unable to delete job {job}, {e}", e)
-            except greenstalk.TimedOutError:
-                print("Timed out waiting for initial data on consumer throughput queue.")
-                pass
-
-        while not self.is_stopped():
-            try:
-                job = self.consumer_throughput_queue.reserve(timeout=1)
-
-                if job is None:
-                    # print("Nothing on consumer throughput queue...")
-                    # sleep for 10ms
-                    time.sleep(.10)
-                    continue
-
-                data = json.loads(job.body)
-
-                # print(f"Received data {data} on consumer throughput queue.")
-
-                consumer_id = data["consumer_id"]
-                throughput = data["throughput"]
-                num_producers = data["producer_count"]
-
-                if not self.configuration["ignore_throughput_threshold"]:
-                    with self.lock:
-                        # append to specific list (as stored in dict)
-                        self.consumer_throughput_dict[consumer_id].append(throughput)
-
-                        if len(self.consumer_throughput_dict[consumer_id]) >= 10:
-                            # truncate list to last 10 entries
-                            self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-10:]
-
-                            consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
-                            print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
-
-                            consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
-
-                            if consumer_throughput_average < consumer_throughput_tolerance:
-                                print(f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}")
-                                self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
-
-                                # stop after 3 consecutive threshold events
-                                if self.threshold_exceeded[consumer_id] >= 3:
-                                    print("Stopping after 3 consecutive threshold events...")
-                                    self.stop()
-                            else:
-                                # reset the threshold events (since they must be consecutive to force an event)
-                                self.threshold_exceeded[consumer_id] = 0
-
-
-                # Finally delete from queue
-                try:
-                    self.consumer_throughput_queue.delete(job)
-                except OSError as e:
-                    print(f"Warning: unable to delete job {job}, {e}", e)
-
-            except greenstalk.TimedOutError:
-                print("Warning: nothing in consumer throughput queue.")
-            except greenstalk.UnknownResponseError:
-                print("Warning: unknown response from beanstalkd server.")
-            except greenstalk.DeadlineSoonError:
-                print("Warning: job timeout in next second.")
-            except ConnectionError as ce:
-                print(f"Error: ConnectionError: {ce}")
-
-
-class ProducerIncrementProcess(StoppableProcess):
-
-    def __init__(self, configuration, consumer_throughput_process):
-        super().__init__()
-        self.configuration = configuration
-        self.consumer_throughput_process = consumer_throughput_process
-
-    def bash_command_with_output(self, additional_args, working_directory):
-        args = ['/bin/bash', '-e'] + additional_args
-        print(args)
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
-        p.wait()
-        out = p.communicate()[0].decode("UTF-8")
-        return out
-
-    def k8s_scale_producers(self, producer_count):
-        filename = "./scale-producers.sh"
-        args = [filename, str(producer_count)]
-        self.bash_command_with_output(args, SCRIPT_DIR)
-
-    def get_producer_count(self):
-        filename = "./get-producers-count.sh"
-        args = [filename]
-
-        producer_count = 0
-        try:
-            producer_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
-        except ValueError:
-            pass
-
-        return producer_count
-
-    def run(self):
-        desired_producer_count = self.configuration["start_producer_count"] 
-        while not self.is_stopped() and (desired_producer_count <= self.configuration["max_producer_count"]):
-            i = 1
-            producer_count = self.get_producer_count()
-            attempts = (desired_producer_count - producer_count) * 40 
-            while not self.is_stopped() and producer_count != desired_producer_count:
-                time.sleep(5)
-                producer_count = self.get_producer_count()
-                print(f"(Still) waiting for producer(s) to start... ({i}/{attempts})")
-                i += 1
-                if i > attempts:
-                    print("Error: Timeout waiting for producer(s) to start...")
-                    self.stop()
-                    break
-
-            # clear the list of entries for all consumers
-            self.consumer_throughput_process.clear_consumer_throughput()
-
-            desired_producer_count += 1
-
-            # Wait for a specified interval before starting the next producer
-            producer_increment_interval_sec = self.configuration["producer_increment_interval_sec"]
-            print(f"Waiting {producer_increment_interval_sec}s before starting next producer.")
-            time.sleep(producer_increment_interval_sec)
-
-            print(f"Starting next producer...")
-            self.k8s_scale_producers(str(desired_producer_count))
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
