@@ -47,6 +47,7 @@ class Controller:
         self.consumer_throughput_queue = queue
         self.producer_increment_process = None
         self.consumer_throughput_process = None
+        self.soak_test_process = None
 
     def post_json(self, endpoint_url, payload):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -65,15 +66,6 @@ class Controller:
                 # wait for input to run configuration
                 # input("Setup complete. Press any key to run the configuration...")
                 self.run_configuration(configuration)
-
-                # wait for thread to finish
-                self.consumer_throughput_process.join()
-
-                # degradation occurred, stop the increment thread
-                self.producer_increment_process.stop()
-
-                # start the decrement & check thread
-
 
             # now teardown and unprovision
             self.teardown_configuration(configuration)
@@ -113,11 +105,15 @@ class Controller:
 
     def stop_threads(self):
         print("Stop threads called.")
+        
         if self.producer_increment_process:
             self.producer_increment_process.stop()
 
         if self.consumer_throughput_process:
             self.consumer_throughput_process.stop()
+
+        if self.soak_test_process:
+            self.soak_test_process.stop()
 
     def teardown_configuration(self, configuration):
         print(f"\r\n4. Teardown configuration: {configuration}")
@@ -329,18 +325,46 @@ class Controller:
 
         return True
 
-    def run_configuration(self, configuration):
-        print(f"\r\n3. Running configuration: {configuration}")
-
-        # Configure producers with required number of initial producers and their message size
-        # Note - number of producers may be
-        self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
-
+    def run_stress_test(self, configuration):
+        print(f"\r\n3. Running stress test.")
         self.consumer_throughput_process = CheckConsumerThroughputProcess(configuration, self.consumer_throughput_queue)
         self.producer_increment_process = ProducerIncrementProcess(configuration, self.consumer_throughput_process)
 
         self.consumer_throughput_process.start()
         self.producer_increment_process.start()
+
+        # join so that we wait for thread to finish
+        # i.e. on degradation event
+        self.consumer_throughput_process.join()
+
+        # degradation occurred, stop the increment thread
+        self.producer_increment_process.stop()
+
+        print(f"\r\n3. Stress test completed.")
+
+    def run_soak_test(self, configuration):
+        print(f"\r\n3. Running soak test.")
+
+        # start the thread for soak test
+        self.soak_test_process.start()
+
+        # wait for thread to exit
+        self.soak_test_process.join()
+
+        print(f"\r\n3. Soak test completed.")
+
+    def run_configuration(self, configuration):
+        print(f"\r\n3. Running configuration: {configuration}")
+
+        # Configure producers with required number of initial producers and their message size
+        # Note - number of producers may be greater than 0
+        self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
+
+        # run stress test
+        self.run_stress_test(configuration)
+
+        # run soak test
+        self.run_soak_test(configuration)
 
     def get_configuration_uid(self):
         return str(uuid.uuid4().hex.upper()[0:6])
@@ -348,7 +372,12 @@ class Controller:
     def load_configurations(self):
         print("Loading configurations.")
 
-        configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 0, "machine_size": "n1-highmem-4", "disk_size": 100, "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": False, "teardown_broker_nodes": False}
+        configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1,
+                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 0,
+                                  "machine_size": "n1-highmem-4", "disk_size": 100,
+                                  "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8",
+                                  "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
+                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": False}
 
         d = {"configuration_uid": self.get_configuration_uid(), "start_producer_count": 9}
         self.configurations.append(dict(configuration_template, **d))
@@ -361,7 +390,8 @@ class Controller:
         d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 5, "max_producer_count": 14}
         self.configurations.append(dict(configuration_template, **d))
         # Final configuration should bring down the nodes
-        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 6, "max_producer_count": 12, "teardown_broker_nodes": True}
+        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 6, "max_producer_count": 12,
+             "teardown_broker_nodes": True}
         self.configurations.append(dict(configuration_template, **d))
 
     def provision_node_pool(self, configuration):
@@ -388,6 +418,139 @@ class Controller:
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
         print("Node pool unprovisioned.")
+
+
+class SoakTestThread(StoppableProcess):
+
+    def __init__(self, configuration, queue):
+        super().__init__()
+
+        self.configuration = configuration
+        self.consumer_throughput_queue = queue
+
+    def bash_command_with_output(self, additional_args, working_directory):
+        args = ['/bin/bash', '-e'] + additional_args
+        print(args)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
+        p.wait()
+        out = p.communicate()[0].decode("UTF-8")
+        return out
+
+    def k8s_scale_producers(self, producer_count):
+        filename = "./scale-producers.sh"
+        args = [filename, str(producer_count)]
+        self.bash_command_with_output(args, SCRIPT_DIR)
+
+    def get_producer_count(self):
+        filename = "./get-producers-count.sh"
+        args = [filename]
+
+        producer_count = 0
+        try:
+            producer_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
+        except ValueError:
+            pass
+
+        return producer_count
+
+    def decrement_producer_count(self):
+        producer_count = self.get_producer_count()
+        print(f"Current producer count is {producer_count}")
+
+        # decrement the producer count
+        producer_count -= 1
+
+        # decrement the producer count
+        self.k8s_scale_producers(producer_count)
+        print(f"Decrementing the producer count to {producer_count}")
+
+    def run(self):
+        num_brokers = self.configuration["num_brokers"]
+
+        self.decrement_producer_count()
+
+        # decrement the producers further until stability is achieved
+        while not self.is_stopped():
+            try:
+                # check the queue
+                job = self.consumer_throughput_queue.reserve(timeout=1)
+
+                if job is None:
+                    print("Nothing on consumer throughput queue...")
+                    # sleep for 10ms
+                    time.sleep(.10)
+                    continue
+
+                data = json.loads(job.body)
+
+                # print(f"Received data {data} on consumer throughput queue.")
+
+                consumer_id = data["consumer_id"]
+                throughput = data["throughput"]
+                num_producers = data["producer_count"]
+
+                # append to specific list (as stored in dict)
+                self.consumer_throughput_dict[consumer_id].append(throughput)
+
+                if len(self.consumer_throughput_dict[consumer_id]) >= 3:
+                    # truncate list to last 3 entries
+                    self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-3:]
+
+                    consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
+                    print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+
+                    consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
+
+                    if consumer_throughput_average < consumer_throughput_tolerance:
+                        print(f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}")
+                        self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
+
+                        # stop after 3 consecutive threshold events
+                        if self.threshold_exceeded[consumer_id] >= 3:
+                            print("Threshold (still exceeded) decrementing producer count")
+                            self.decrement_producer_count()
+                        else:
+                            # reset the threshold events (since they must be consecutive to force an event)
+                            self.threshold_exceeded[consumer_id] = 0
+
+        num_producers = self.get_producer_count()
+        print(f"Throughput stability achieved @ {num_producers} producers.")
+
+        # start soak test once stability achieved
+        soak_test_s = (313 * num_brokers) / num_producers
+        print(f"Running soak test for {soak_test_s} seconds.")
+
+        start_time = time.now()
+        while not self.is_stopped() and ((time.now() - start_time) < soak_test_s):
+            try:
+                # check the queue
+                job = self.consumer_throughput_queue.reserve(timeout=1)
+
+                if job is None:
+                    # print("Nothing on consumer throughput queue...")
+                    # sleep for 10ms
+                    time.sleep(.10)
+                    continue
+
+                data = json.loads(job.body)
+                print(f"Received data {data} on consumer throughput queue.")
+
+                # Finally delete from queue
+                try:
+                    self.consumer_throughput_queue.delete(job)
+                except OSError as e:
+                    print(f"Warning: unable to delete job {job}, {e}", e)
+
+            except greenstalk.TimedOutError:
+                print("Warning: nothing in consumer throughput queue.")
+            except greenstalk.UnknownResponseError:
+                print("Warning: unknown response from beanstalkd server.")
+            except greenstalk.DeadlineSoonError:
+                print("Warning: job timeout in next second.")
+            except ConnectionError as ce:
+                print(f"Error: ConnectionError: {ce}")
+
+        print(f"Soak test completed after {soak_test_s} seconds.")
 
 
 class CheckConsumerThroughputProcess(StoppableProcess):
@@ -433,14 +596,14 @@ class CheckConsumerThroughputProcess(StoppableProcess):
                 job = self.consumer_throughput_queue.reserve(timeout=1)
 
                 if job is None:
-                    print("Nothing on consumer throughput queue...")
+                    # print("Nothing on consumer throughput queue...")
                     # sleep for 10ms
                     time.sleep(.10)
                     continue
 
                 data = json.loads(job.body)
 
-                print(f"Received data {data} on consumer throughput queue.")
+                # print(f"Received data {data} on consumer throughput queue.")
 
                 consumer_id = data["consumer_id"]
                 throughput = data["throughput"]
