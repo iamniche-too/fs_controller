@@ -15,7 +15,16 @@ class PartitionCountController(Controller):
         # override the partition count
         d = {"number_of_partitions": 5}
         template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
 
+        # override the partition count
+        d = {"number_of_partitions": 15}
+        template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
+
+        # override the partition count
+        d = {"number_of_partitions": 30}
+        template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 
 

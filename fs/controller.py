@@ -121,10 +121,10 @@ class Controller:
           print("Broker nodes left standing.")
 
     # run a script to deploy kafka
-    def k8s_deploy_kafka(self, num_partitions):
-        print(f"Deploying Kafka with {num_partitions} partitions...")
+    def k8s_deploy_kafka(self, num_partitions, replication_factor):
+        print(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}...")
         filename = "./deploy.sh"
-        args = [filename, str(num_partitions)]
+        args = [filename, str(num_partitions), str(replication_factor)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     # run a script to deploy producers/consumers

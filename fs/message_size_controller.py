@@ -16,7 +16,16 @@ class MessageSizeController(Controller):
         # override the message size
         d = {"message_size_kb": 75}
         template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
 
+        # override the message size
+        d = {"message_size_kb": 750}
+        template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
+
+        # override the message size
+        d = {"message_size_kb": 7500}
+        template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 
 

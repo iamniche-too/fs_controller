@@ -13,7 +13,16 @@ class ReplicationFactorController(Controller):
         print("Loading replication factor configurations.")
 
         # override the replication factor
+        d = {"replication_factor": 1}
+        template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
+
+        # override the replication factor
         d = {"replication_factor": 3}
+        template = dict(self.configuration_template, **d)
+
+        # override the replication factor
+        d = {"replication_factor": 5}
         template = dict(self.configuration_template, **d)
 
         self.configurations.append(self.get_configurations(template))
