@@ -6,6 +6,8 @@ from fs.base_process import BaseProcess
 # A 21GB pagefile can cache:
 # 168Gb / (0.59 * p / n) == 285 * n / p seconds of data.
 # 110% = 313s
+from fs.utils import DEFAULT_THROUGHPUT_MB_S, DEFAULT_CONSUMER_TOLERANCE
+
 SOAK_TEST_S = 313
 
 
