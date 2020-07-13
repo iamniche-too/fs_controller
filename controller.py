@@ -2,6 +2,7 @@ import subprocess
 import time
 from datetime import datetime
 
+import threading
 import greenstalk
 import requests
 import json
@@ -26,12 +27,11 @@ KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
 PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
 BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
 
-DEFAULT_CONSUMER_TOLERANCE = 0.9
+DEFAULT_CONSUMER_TOLERANCE = 0.85
 DEFAULT_THROUGHPUT_MB_S = 75
-PRODUCER_STARTUP_INTERVAL_S = 26
 
-# Cluster restarted: 06/07 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-54221950f5f6@kafka-k8s-trial.iam.gserviceaccount.com"
+# Cluster restarted: 08/07 
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-76536cff2f28@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
@@ -65,7 +65,15 @@ class Controller:
                 # wait for input to run configuration
                 # input("Setup complete. Press any key to run the configuration...")
                 self.run_configuration(configuration)
+
+                # wait for thread to finish
                 self.consumer_throughput_process.join()
+
+                # degradation occurred, stop the increment thread
+                self.producer_increment_process.stop()
+
+                # start the decrement & check thread
+
 
             # now teardown and unprovision
             self.teardown_configuration(configuration)
@@ -328,28 +336,33 @@ class Controller:
         # Note - number of producers may be
         self.k8s_configure_producers(str(configuration["start_producer_count"]), str(configuration["message_size_kb"]))
 
-        self.producer_increment_process = ProducerIncrementProcess(configuration)
         self.consumer_throughput_process = CheckConsumerThroughputProcess(configuration, self.consumer_throughput_queue)
+        self.producer_increment_process = ProducerIncrementProcess(configuration, self.consumer_throughput_process)
 
         self.consumer_throughput_process.start()
         self.producer_increment_process.start()
 
+    def get_configuration_uid(self):
+        return str(uuid.uuid4().hex.upper()[0:6])
+
     def load_configurations(self):
         print("Loading configurations.")
 
-        configuration_uid = str(uuid.uuid4().hex.upper()[0:6])
+        configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1, "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 0, "machine_size": "n1-highmem-4", "disk_size": 100, "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": False, "teardown_broker_nodes": False}
 
-        # configuration_3_750_n1_standard_1 = {
-        configuration_template = {
-            "configuration_uid": configuration_uid,
-            "number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 9, "max_producer_count": 15,
-            "num_consumers": 3,
-            "producer_increment_interval_sec": 0, "machine_size": "n1-highmem-4", "disk_size": 100,
-            #"producer_increment_interval_sec": 0, "machine_size": "n1-standard-8", "disk_size": 100,
-            "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5, "ignore_throughput_threshold": True, "teardown_broker_nodes": False}
-
-        self.configurations.append(dict(configuration_template))
-        # self.configurations.append(dict(configuration_template, message_size_kb=7500))
+        d = {"configuration_uid": self.get_configuration_uid(), "start_producer_count": 9}
+        self.configurations.append(dict(configuration_template, **d))
+        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 2, "start_producer_count": 9}
+        self.configurations.append(dict(configuration_template, **d))
+        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 3, "start_producer_count": 9}
+        self.configurations.append(dict(configuration_template, **d))
+        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 4, "start_producer_count": 4}
+        self.configurations.append(dict(configuration_template, **d))
+        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 5, "max_producer_count": 14}
+        self.configurations.append(dict(configuration_template, **d))
+        # Final configuration should bring down the nodes
+        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 6, "max_producer_count": 12, "teardown_broker_nodes": True}
+        self.configurations.append(dict(configuration_template, **d))
 
     def provision_node_pool(self, configuration):
         print(f"\r\n1. Provisioning node pool: {configuration}")
@@ -383,12 +396,17 @@ class CheckConsumerThroughputProcess(StoppableProcess):
         super().__init__()
         self.configuration = configuration
         self.consumer_throughput_queue = queue
-        self.threshold_exceeded = 0
+        self.threshold_exceeded = {} 
+        self.consumer_throughput_dict = defaultdict(list)
+        self.lock = threading.Lock()
+
+    def clear_consumer_throughput(self):
+       with self.lock:
+           for key in self.consumer_throughput_dict.keys():
+               self.consumer_throughput_dict[key].clear()
+       print("Flushed consumer throughput values.")
 
     def run(self):
-        # create a dictionary of lists
-        consumer_throughput_dict = defaultdict(list)
-
         # Ignore the first entry for all consumers
         consumer_dict = defaultdict()
         while len(consumer_dict.keys()) < int(self.configuration["num_consumers"]):
@@ -429,29 +447,31 @@ class CheckConsumerThroughputProcess(StoppableProcess):
                 num_producers = data["producer_count"]
 
                 if not self.configuration["ignore_throughput_threshold"]:
-                    # append to specific list (as stored in dict)
-                    consumer_throughput_dict[consumer_id].append(throughput)
+                    with self.lock:
+                        # append to specific list (as stored in dict)
+                        self.consumer_throughput_dict[consumer_id].append(throughput)
 
-                    if len(consumer_throughput_dict[consumer_id]) >= 10:
-                        # truncate list to last 10 entries
-                        consumer_throughput_dict[consumer_id] = consumer_throughput_dict[consumer_id][-10:]
+                        if len(self.consumer_throughput_dict[consumer_id]) >= 10:
+                            # truncate list to last 10 entries
+                            self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-10:]
 
-                        consumer_throughput_average = mean(consumer_throughput_dict[consumer_id])
-                        print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                            consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
+                            print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
-                        consumer_throughput_tolerance = (
-                                DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
-                        if consumer_throughput_average < consumer_throughput_tolerance:
-                            print(
-                                f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}")
-                            self.threshold_exceeded += 1
+                            consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 
-                            # clear the list of entries for the given consumer
-                            consumer_throughput_dict[consumer_id].clear()
+                            if consumer_throughput_average < consumer_throughput_tolerance:
+                                print(f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}")
+                                self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
-                            if self.threshold_exceeded == 3:
-                                print("Stopping after 3 threshold events...")
-                                self.stop()
+                                # stop after 3 consecutive threshold events
+                                if self.threshold_exceeded[consumer_id] >= 3:
+                                    print("Stopping after 3 consecutive threshold events...")
+                                    self.stop()
+                            else:
+                                # reset the threshold events (since they must be consecutive to force an event)
+                                self.threshold_exceeded[consumer_id] = 0
+
 
                 # Finally delete from queue
                 try:
@@ -471,9 +491,10 @@ class CheckConsumerThroughputProcess(StoppableProcess):
 
 class ProducerIncrementProcess(StoppableProcess):
 
-    def __init__(self, configuration):
+    def __init__(self, configuration, consumer_throughput_process):
         super().__init__()
         self.configuration = configuration
+        self.consumer_throughput_process = consumer_throughput_process
 
     def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
@@ -498,51 +519,36 @@ class ProducerIncrementProcess(StoppableProcess):
         except ValueError:
             pass
 
-        print(f"reported_producer_count={producer_count}")
         return producer_count
 
-    def check_producers(self, expected_producer_count):
-        actual_producer_count = self.get_producer_count()
-        print(f"actual_producer_count={actual_producer_count}, expected_producer_count={expected_producer_count}")
-        if actual_producer_count == expected_producer_count:
-            return True
-        else:
-            return False
-
     def run(self):
-        first_producer = True
-
-        # start at configured value
-        actual_producer_count = self.configuration["start_producer_count"]
-        while not self.is_stopped() and (actual_producer_count <= self.configuration["max_producer_count"]):
-            if not first_producer:
-                # Wait for a specified interval before starting the next producer
-                producer_increment_interval_sec = self.configuration["producer_increment_interval_sec"]
-                print(f"Waiting {producer_increment_interval_sec}s before starting next producer.")
-                time.sleep(producer_increment_interval_sec)
-            else:
-                first_producer = False
-
-            print(f"Starting producer {actual_producer_count}")
-
-            # Start a new producer
-            self.k8s_scale_producers(str(actual_producer_count))
-
-            time.sleep(PRODUCER_STARTUP_INTERVAL_S)
-
+        desired_producer_count = self.configuration["start_producer_count"] 
+        while not self.is_stopped() and (desired_producer_count <= self.configuration["max_producer_count"]):
             i = 1
-            check_producers = self.check_producers(actual_producer_count)
-            while not self.is_stopped() and not check_producers:
+            producer_count = self.get_producer_count()
+            attempts = (desired_producer_count - producer_count) * 40 
+            while not self.is_stopped() and producer_count != desired_producer_count:
                 time.sleep(5)
-                check_producers = self.check_producers(actual_producer_count)
-                print(f"(Still) waiting for producer to start... ({i}/24)")
+                producer_count = self.get_producer_count()
+                print(f"(Still) waiting for producer(s) to start... ({i}/{attempts})")
                 i += 1
-                if i > 24:
-                    print("Error: Timeout waiting for producer to start...")
+                if i > attempts:
+                    print("Error: Timeout waiting for producer(s) to start...")
                     self.stop()
+                    break
 
-            actual_producer_count += 1
+            # clear the list of entries for all consumers
+            self.consumer_throughput_process.clear_consumer_throughput()
 
+            desired_producer_count += 1
+
+            # Wait for a specified interval before starting the next producer
+            producer_increment_interval_sec = self.configuration["producer_increment_interval_sec"]
+            print(f"Waiting {producer_increment_interval_sec}s before starting next producer.")
+            time.sleep(producer_increment_interval_sec)
+
+            print(f"Starting next producer...")
+            self.k8s_scale_producers(str(desired_producer_count))
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
