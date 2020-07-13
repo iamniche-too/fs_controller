@@ -13,6 +13,8 @@ class BaseProcess(StoppableProcess):
     Base process
     """
     def get_data(self, consumer_throughput_queue, timeout=1):
+        data = None
+
         try:
             job = consumer_throughput_queue.reserve(timeout)
 

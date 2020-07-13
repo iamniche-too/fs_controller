@@ -12,7 +12,7 @@ KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
 PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
 BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
 
-DEFAULT_CONSUMER_TOLERANCE = 0.85
+DEFAULT_CONSUMER_TOLERANCE = 0.95
 DEFAULT_THROUGHPUT_MB_S = 75
 
 # Cluster restarted: 13/07
