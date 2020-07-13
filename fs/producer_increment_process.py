@@ -21,14 +21,15 @@ class ProducerIncrementProcess(BaseProcess):
             while not self.is_stopped() and producer_count != desired_producer_count:
                 time.sleep(5)
                 producer_count = self.get_producer_count()
-                print(f"(Still) waiting for producer(s) to start... ({i}/{attempts})")
+                print(f"producer_count={producer_count} - still waiting for all producer(s) to start... ({i}/{attempts})")
                 i += 1
                 if i > attempts:
                     print("Error: Timeout waiting for producer(s) to start...")
                     self.stop()
                     break
 
-            # clear the list of entries for all consumers
+            # new producer starting, therefore clear the throughput entries for all consumers
+            # to avoid "wrong" degradation reports
             self.consumer_throughput_process.clear_consumer_throughput()
 
             desired_producer_count += 1

@@ -11,7 +11,6 @@ class CheckConsumerThroughputProcess(BaseProcess):
     """
     Check consumer throughput process
     """
-
     def __init__(self, configuration, queue):
         super().__init__()
         self.configuration = configuration

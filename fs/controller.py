@@ -23,6 +23,16 @@ class Controller:
         self.consumer_throughput_process = None
         self.soak_test_process = None
 
+        self.configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1,
+                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 0,
+                                  "machine_size": "n1-highmem-4", "disk_size": 100,
+                                  "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8",
+                                  "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
+                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": False, "replication_factor": 1}
+
+        # default the number of partitions
+        self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
+
     def post_json(self, endpoint_url, payload):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
@@ -254,7 +264,7 @@ class Controller:
         # deploy kafka brokers
         # where num_partitions = max(#P, #C), where #P = TT / 75)
         # see https://docs.cloudera.com/runtime/7.1.0/kafka-performance-tuning/topics/kafka-tune-sizing-partition-number.html
-        num_partitions = configuration["number_of_brokers"] * 3
+        num_partitions = configuration["number_of_partitions"]
         self.k8s_deploy_kafka(num_partitions)
 
         # Configure # kafka brokers
@@ -346,29 +356,34 @@ class Controller:
         return str(uuid.uuid4().hex.upper()[0:6])
 
     def load_configurations(self):
-        print("Loading configurations.")
+        raise NotImplementedError("Please use a sub-class to implement actual configurations")
 
-        configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1,
-                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 0,
-                                  "machine_size": "n1-highmem-4", "disk_size": 100,
-                                  "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8",
-                                  "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
-                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": False}
+    def get_configurations(self, template):
+        configurations = []
 
         d = {"configuration_uid": self.get_configuration_uid(), "start_producer_count": 9}
-        self.configurations.append(dict(configuration_template, **d))
-        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 2, "start_producer_count": 9}
-        self.configurations.append(dict(configuration_template, **d))
-        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 3, "start_producer_count": 9}
-        self.configurations.append(dict(configuration_template, **d))
-        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 4, "start_producer_count": 4}
-        self.configurations.append(dict(configuration_template, **d))
-        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 5, "max_producer_count": 14}
-        self.configurations.append(dict(configuration_template, **d))
+        configurations.append(dict(template, **d))
+
+        # d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 2, "start_producer_count": 9}
+        # configurations.append(dict(template, **d))
+
+        # d = {"configuration_uid": self.self.get_configuration_uid(), "num_consumers": 3, "start_producer_count": 9}
+        # configurations.append(dict(template, **d))
+
+        # d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 4, "start_producer_count": 4}
+        # configurations.append(dict(template, **d))
+
+        # start_producer_count defaults to 1
+        # d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 5, "max_producer_count": 14}
+        # configurations.append(dict(template, **d))
+
+        # start_producer_count defaults to 1
         # Final configuration should bring down the nodes
         d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 6, "max_producer_count": 12,
              "teardown_broker_nodes": True}
-        self.configurations.append(dict(configuration_template, **d))
+        configurations.append(dict(template, **d))
+
+        return configurations
 
     def provision_node_pool(self, configuration):
         print(f"\r\n1. Provisioning node pool: {configuration}")
@@ -395,11 +410,3 @@ class Controller:
         self.bash_command_with_wait(args, TERRAFORM_DIR)
         print("Node pool unprovisioned.")
 
-
-# GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
-if __name__ == '__main__':
-    print("Reminder: have you remembered to update the SERVICE_ACCOUNT_EMAIL (if cluster has been bounced?)")
-    consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
-    c = Controller(consumer_throughput_queue)
-    c.flush_consumer_throughput_queue()
-    c.run()
