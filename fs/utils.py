@@ -2,8 +2,8 @@ K8S_SERVICE_COUNT = 22
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
 KAFKA_NAMESPACE = "kafka"
-SCRIPT_DIR = "../scripts"
-TERRAFORM_DIR = "../terraform/"
+SCRIPT_DIR = "/scripts"
+TERRAFORM_DIR = "/terraform/"
 
 # set this to where-ever fs-kafka-k8s is cloned
 # KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
