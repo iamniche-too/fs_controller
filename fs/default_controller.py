@@ -7,7 +7,7 @@ class DefaultController(Controller):
 
     def get_configuration_description(self):
         return "Default test"
-    
+
     def load_configurations(self):
         """
         Default configurations

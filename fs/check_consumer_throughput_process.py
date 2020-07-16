@@ -64,13 +64,13 @@ class CheckConsumerThroughputProcess(BaseProcess):
 
                         if consumer_throughput_average < consumer_throughput_tolerance:
                             print(
-                                f"Warning: Consumer {consumer_id} throughput average {consumer_throughput_average} is below tolerance {consumer_throughput_tolerance}")
+                                f"Warning: Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}, # exceptions {self.threshold_exceeded[consumer_id]}")
                             self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
                             # stop after 3 consecutive threshold events
                             if self.threshold_exceeded[consumer_id] >= 3:
                                 print("Stopping after 3 consecutive threshold events...")
                                 self.stop()
-                            else:
-                                # reset the threshold events (since they must be consecutive to force an event)
-                                self.threshold_exceeded[consumer_id] = 0
+                        else:
+                            # reset the threshold events (since they must be consecutive to force an event)
+                            self.threshold_exceeded[consumer_id] = 0
