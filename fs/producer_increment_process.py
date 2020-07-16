@@ -28,10 +28,6 @@ class ProducerIncrementProcess(BaseProcess):
                     self.stop()
                     break
 
-            # new producer starting, therefore clear the throughput entries for all consumers
-            # to avoid "wrong" degradation reports
-            self.consumer_throughput_process.clear_consumer_throughput()
-
             desired_producer_count += 1
 
             # Wait for a specified interval before starting the next producer
