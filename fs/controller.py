@@ -267,7 +267,8 @@ class Controller:
         # where num_partitions = max(#P, #C), where #P = TT / 75)
         # see https://docs.cloudera.com/runtime/7.1.0/kafka-performance-tuning/topics/kafka-tune-sizing-partition-number.html
         num_partitions = configuration["number_of_partitions"]
-        self.k8s_deploy_kafka(num_partitions)
+        replication_factor = configuration["replication_factor"]
+        self.k8s_deploy_kafka(num_partitions, replication_factor)
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
