@@ -48,14 +48,16 @@ class CheckConsumerThroughputProcess(BaseProcess):
             num_producers = data["producer_count"]
 
             if not self.configuration["ignore_throughput_threshold"]:
+                # detect ANY consumer that has throughput below a threshold
                 with self.lock:
                     # append to specific list (as stored in dict)
                     self.consumer_throughput_dict[consumer_id].append(throughput)
 
-                    if len(self.consumer_throughput_dict[consumer_id]) >= 10:
-                        # truncate list to last 10 entries
-                        self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-10:]
+                    if len(self.consumer_throughput_dict[consumer_id]) >= 5:
+                        # truncate list to last x entries
+                        self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-5:]
 
+                        # calculate the mean
                         consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
                         print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
@@ -63,14 +65,17 @@ class CheckConsumerThroughputProcess(BaseProcess):
                                         DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 
                         if consumer_throughput_average < consumer_throughput_tolerance:
+                            # below threshold
                             print(
                                 f"Warning: Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}, # exceptions {self.threshold_exceeded[consumer_id]}")
                             self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
                             # stop after 3 consecutive threshold events
                             if self.threshold_exceeded[consumer_id] >= 3:
-                                print("Stopping after 3 consecutive threshold events...")
+                                print("Stopping after multiple throughput below tolerance...")
                                 self.stop()
                         else:
-                            # reset the threshold events (since they must be consecutive to force an event)
+                            # above threshold, reset the threshold events
+                            # (as they must be consecutive to stop the thread)
                             self.threshold_exceeded[consumer_id] = 0
+
