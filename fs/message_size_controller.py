@@ -5,6 +5,9 @@ from fs.controller import Controller
 
 class MessageSizeController(Controller):
 
+    def get_configuration_description(self):
+        return "Testing message sizes"
+
     def load_configurations(self):
         """
         Configurations pertaining to changing message size

@@ -5,6 +5,9 @@ from fs.controller import Controller
 
 class ReplicationFactorController(Controller):
 
+    def get_configuration_description(self):
+        return "Testing replication factor"
+
     def load_configurations(self):
         """
         Configurations pertaining to changing message size

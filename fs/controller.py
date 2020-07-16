@@ -361,28 +361,31 @@ class Controller:
     def load_configurations(self):
         raise NotImplementedError("Please use a sub-class to implement actual configurations")
 
+    def get_configuration_description(self):
+        raise NotImplementedError("Please use a sub-class to implement the configuration description")
+
     def get_configurations(self, template):
         configurations = []
 
-        d = {"configuration_uid": self.get_configuration_uid(), "start_producer_count": 9}
+        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
         configurations.append(dict(template, **d))
 
-        # d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 2, "start_producer_count": 9}
+        # d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 9}
         # configurations.append(dict(template, **d))
 
-        # d = {"configuration_uid": self.self.get_configuration_uid(), "num_consumers": 3, "start_producer_count": 9}
+        # d = {"configuration_uid": self.self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 9}
         # configurations.append(dict(template, **d))
 
-        # d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 4, "start_producer_count": 4}
+        # d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
         # configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
-        # d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 5, "max_producer_count": 14}
+        # d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
         # configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
         # Final configuration should bring down the nodes
-        d = {"configuration_uid": self.get_configuration_uid(), "num_consumers": 6, "max_producer_count": 12,
+        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 6, "max_producer_count": 12,
              "teardown_broker_nodes": True}
         configurations.append(dict(template, **d))
 
