@@ -41,18 +41,20 @@ class Controller:
         self.load_configurations()
 
         for configuration in self.configurations:
-            print("\r\nTrying next configuration...")
+            configuration_as_dict = configuration[0]
 
-            self.provision_node_pool(configuration)
+            print(f"\r\nNext configuration: {configuration_as_dict}")
+
+            self.provision_node_pool(configuration_as_dict)
 
             # only run if everything is ok
-            if self.setup_configuration(configuration):
+            if self.setup_configuration(configuration_as_dict):
                 # wait for input to run configuration
                 # input("Setup complete. Press any key to run the configuration...")
-                self.run_configuration(configuration)
+                self.run_configuration(configuration_as_dict)
 
             # now teardown and unprovision
-            self.teardown_configuration(configuration)
+            self.teardown_configuration(configuration_as_dict)
 
             # reset the stop threads flag
             global stop_threads
@@ -386,11 +388,10 @@ class Controller:
         return configurations
 
     def provision_node_pool(self, configuration):
-        print(f"\r\n1. Provisioning node pool: {configuration}")
+        print(f"\r\n1. Provisioning node pool.")
 
         filename = "./generate-kafka-node-pool.sh"
-        args = [filename, SERVICE_ACCOUNT_EMAIL, str(configuration["machine_size"]), str(configuration["disk_type"]),
-                str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
+        args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], configuration["disk_type"], str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
 
         filename = "./generate-zk-node-pool.sh"
