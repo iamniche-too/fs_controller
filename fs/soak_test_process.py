@@ -16,7 +16,7 @@ class SoakTestProcess(ThroughputProcess):
     Soak test process
     """
     def __init__(self, configuration, queue):
-        super().__init__()
+        super().__init__(configuration, queue)
 
         self.configuration = configuration
         self.consumer_throughput_queue = queue

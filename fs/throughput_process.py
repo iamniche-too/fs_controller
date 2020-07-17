@@ -5,6 +5,8 @@ from statistics import mean
 from fs.base_process import BaseProcess
 from fs.utils import DEFAULT_THROUGHPUT_MB_S, DEFAULT_CONSUMER_TOLERANCE
 
+INITIAL_WINDOW_SIZE = 10
+
 
 class ThroughputProcess(BaseProcess):
 
@@ -31,6 +33,8 @@ class ThroughputProcess(BaseProcess):
         self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
     def check_throughput(self):
+        window_size = INITIAL_WINDOW_SIZE
+
         while not self.is_stopped():
             data = self.get_data(self.consumer_throughput_queue)
             if data is None:
@@ -44,6 +48,9 @@ class ThroughputProcess(BaseProcess):
             # detect if the num_producers has changed
             # since if it has we want to flush the throughput values
             if self.previous_num_producers != num_producers:
+                # set window size (since initial window size is only while initial producers are starting)
+                window_size = 5
+
                 # A new producer has started, therefore clear the throughput entries for all consumers
                 # to avoid "incorrect" degradation reports
                 for key in self.consumer_throughput_dict.keys():
@@ -58,9 +65,9 @@ class ThroughputProcess(BaseProcess):
                 # append to specific list (as stored in dict)
                 self.consumer_throughput_dict[consumer_id].append(throughput)
 
-                if len(self.consumer_throughput_dict[consumer_id]) >= 7:
+                if len(self.consumer_throughput_dict[consumer_id]) >= window_size:
                     # truncate list to last x entries
-                    self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-7:]
+                    self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-window_size:]
 
                     # calculate the mean
                     consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
