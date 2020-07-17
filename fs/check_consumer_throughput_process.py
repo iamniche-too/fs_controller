@@ -56,9 +56,9 @@ class CheckConsumerThroughputProcess(BaseProcess):
                 # append to specific list (as stored in dict)
                 self.consumer_throughput_dict[consumer_id].append(throughput)
 
-                if len(self.consumer_throughput_dict[consumer_id]) >= 5:
+                if len(self.consumer_throughput_dict[consumer_id]) >= 6:
                     # truncate list to last x entries
-                    self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-5:]
+                    self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-6:]
 
                     # calculate the mean
                     consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
