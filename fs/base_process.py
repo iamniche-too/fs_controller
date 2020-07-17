@@ -33,6 +33,7 @@ class BaseProcess(StoppableProcess):
         except greenstalk.TimedOutError:
             # mute for output sake
             # print("[BaseProcess] - Warning: nothing in consumer throughput queue.")
+            pass
         except greenstalk.UnknownResponseError:
             print("[BaseProcess] - Warning: unknown response from beanstalkd server.")
         except greenstalk.DeadlineSoonError:
