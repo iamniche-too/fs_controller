@@ -1,17 +1,17 @@
 import time
 from statistics import mean
 from collections import defaultdict
-from fs.base_process import BaseProcess
 
 # A 21GB pagefile can cache:
 # 168Gb / (0.59 * p / n) == 285 * n / p seconds of data.
 # 110% = 313s
+from fs.throughput_process import ThroughputProcess
 from fs.utils import DEFAULT_THROUGHPUT_MB_S, DEFAULT_CONSUMER_TOLERANCE
 
 SOAK_TEST_S = 313
 
 
-class SoakTestProcess(BaseProcess):
+class SoakTestProcess(ThroughputProcess):
     """
     Soak test process
     """
@@ -47,69 +47,45 @@ class SoakTestProcess(BaseProcess):
 
         print(f"[ProducerIncrementProcess] - actual_producer_count={actual_producer_count}")
 
+    def throughput_ok(self, consumer_id):
+        super().throughput_ok(consumer_id)
+
+        # Check each consumer to see if we are stable
+        is_stable = True
+        for consumer_id in self.threshold_exceeded.keys():
+            # if there have been any threshold events, then it is not yet stable
+            if self.threshold_exceeded[consumer_id] > 0:
+                is_stable = False
+
+        return is_stable
+
+    def throughput_exceeded(self, consumer_id):
+        super().throughput_exceeded(consumer_id)
+
+        # check for consecutive threshold events
+        if self.threshold_exceeded[consumer_id] >= 3:
+            print("[SoakTestProcess] - Threshold (still) exceeded: decrementing producer count...")
+
+            num_producers = self.get_producer_count()
+
+            # decrement the producer count
+            self.decrement_producer_count()
+
+            # wait for the producer count to settle
+            self.check_producer_count(num_producers - 1)
+
+            # reset the thresholds
+            self.threshold_exceeded[consumer_id] = 0
+
+            # reset the throughput list for this particular consumer
+            self.consumer_throughput_dict[consumer_id].clear()
+
     def run(self):
         print("[SoakTestProcess] - started.")
 
         # decrement the number of running producers
         self.decrement_producer_count()
-
-        # decrement the producers further until stability is achieved
-        stable = False
-        while not self.is_stopped() and not stable:
-            data = self.get_data(self.consumer_throughput_queue)
-            if data is None:
-                # print("Nothing on consumer throughput queue...")
-                time.sleep(.10)
-                continue
-
-            consumer_id = data["consumer_id"]
-            throughput = data["throughput"]
-            num_producers = data["producer_count"]
-
-            # append to specific list (as stored in dict)
-            self.consumer_throughput_dict[consumer_id].append(throughput)
-
-            if len(self.consumer_throughput_dict[consumer_id]) >= 5:
-                # truncate list to last 5 entries
-                self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-5:]
-
-                consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
-                print(f"[SoakTestProcess] - Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
-
-                consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
-
-                if consumer_throughput_average < consumer_throughput_tolerance:
-                    print(
-                        f"[SoakTestProcess] - Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
-                    self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
-
-                    # check for consecutive threshold events
-                    if self.threshold_exceeded[consumer_id] >= 3:
-                        print("[SoakTestProcess] - Threshold (still) exceeded: decrementing producer count...")
-                        # decrement the producer count
-                        self.decrement_producer_count()
-
-                        # wait for the producer count to settle
-                        self.check_producer_count(num_producers-1)
-
-                        # reset the thresholds
-                        self.threshold_exceeded[consumer_id] = 0
-
-                        # reset the throughput list for this particular consumer
-                        self.consumer_throughput_dict[consumer_id].clear()
-                else:
-                    # reset the threshold events (since they must be consecutive to force an event)
-                    self.threshold_exceeded[consumer_id] = 0
-
-                    # Check each consumer to see if we are stable
-                    is_stable = True
-                    for consumer_id in self.threshold_exceeded.keys():
-                        # if there have been any threshold events, then it is not yet stable
-                        if self.threshold_exceeded[consumer_id] > 0:
-                            is_stable = False
-
-                    if is_stable:
-                        break
+        self.check_throughput()
 
         num_producers = self.get_producer_count()
         print(f"[SoakTestProcess] - Throughput stability achieved @ {num_producers} producers.")

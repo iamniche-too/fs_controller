@@ -27,12 +27,19 @@ class ProducerIncrementProcess(BaseProcess):
 
         print(f"[ProducerIncrementProcess] - actual_producer_count={actual_producer_count}")
 
+    def check_and_wait(self, desired_producer_count):
+        # check the producer count is correct
+        self.check_producer_count(desired_producer_count)
+
+        # wait before we start another producer
+        self.wait_interval()
+
     def run(self):
         print("[ProducerIncrementProcess] - started.")
 
+        # check that the *initial* number of producers have actually started
         initial_producer_count = self.configuration["start_producer_count"]
-        self.check_producer_count(initial_producer_count)
-        self.wait_interval()
+        self.check_and_wait(initial_producer_count)
 
         # increment the producer count
         desired_producer_count = initial_producer_count
@@ -44,7 +51,6 @@ class ProducerIncrementProcess(BaseProcess):
                 self.k8s_scale_producers(desired_producer_count)
 
             if not self.is_stopped():
-                self.check_producer_count(desired_producer_count)
-                self.wait_interval()
+                self.check_and_wait(desired_producer_count)
 
         print("[ProducerIncrementProcess] - ended.")
