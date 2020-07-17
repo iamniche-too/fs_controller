@@ -41,7 +41,7 @@ resource "google_container_node_pool" "zk_node_pool" {
   node_config {
     # The name of a Google Compute Engine machine type. Defaults to
     # n1-standard-1.
-    machine_type = "n1-standard-1"
+    machine_type = "n1-standard-2"
 
     service_account = "$SERVICE_ACCOUNT_EMAIL" 
 
