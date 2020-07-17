@@ -270,7 +270,7 @@ class Controller:
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
         # Note - hard-coded to 3 ZK in zookeeper-3.4.14/zookeeper-statefulset.yaml
-        self.k8s_deploy_zk(configuration)
+        self.k8s_deploy_zk()
 
         all_ok = self.check_zk_ok()
         if not all_ok:
