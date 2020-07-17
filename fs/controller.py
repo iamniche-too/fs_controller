@@ -168,7 +168,7 @@ class Controller:
         # wait for burrow external IP to be assigned
         print("[Controller] - Waiting for Burrow external IP...")
         burrow_ip = self.get_burrow_ip()
-        while burrow_ip is None or burrow_ip is "":
+        while burrow_ip is None or burrow_ip == "":
             time.sleep(5)
 
         print(f"[Controller] - Burrow external IP: {burrow_ip}")
