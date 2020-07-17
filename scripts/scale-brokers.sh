@@ -1,7 +1,7 @@
 #!/bin/bash
 BROKER_COUNT=$1
 
-echo "start brokers, BROKER_COUNT=$BROKER_COUNT"
+# echo "start brokers, BROKER_COUNT=$BROKER_COUNT"
 
 source ./export-gcp-credentials.sh
 

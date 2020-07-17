@@ -1,7 +1,7 @@
 #!/bin/bash
 NUM_CONSUMERS=$1
 
-echo "configure consumers, NUM_CONSUMERS=$NUM_CONSUMERS"
+# echo "configure consumers, NUM_CONSUMERS=$NUM_CONSUMERS"
 
 source ./export-gcp-credentials.sh
 

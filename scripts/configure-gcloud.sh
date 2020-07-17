@@ -2,7 +2,7 @@
 CLUSTER_NAME=$1
 CLUSTER_ZONE=$2
 
-echo "configuring gcloud with CLUSTER_NAME=$CLUSTER_NAME, CLUSTER_ZONE=$CLUSTER_ZONE"
+# echo "configuring gcloud with CLUSTER_NAME=$CLUSTER_NAME, CLUSTER_ZONE=$CLUSTER_ZONE"
 
 export GET_CMD="gcloud container clusters describe $CLUSTER_NAME --zone=$CLUSTER_ZONE"
 

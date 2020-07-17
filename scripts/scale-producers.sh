@@ -1,6 +1,6 @@
 #!/bin/bash
 PRODUCER_COUNT=$1
-echo "scale-producers, PRODUCER_COUNT=$PRODUCER_COUNT"
+# echo "scale-producers, PRODUCER_COUNT=$PRODUCER_COUNT"
 
 source ./export-gcp-credentials.sh
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 NAMESPACE=$1
-echo "delete namespace, NAMESPACE=$NAMESPACE"
+# echo "delete namespace, NAMESPACE=$NAMESPACE"
 
 source ./export-gcp-credentials.sh
 
