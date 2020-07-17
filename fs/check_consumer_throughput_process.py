@@ -25,7 +25,7 @@ class CheckConsumerThroughputProcess(BaseProcess):
             data = self.get_data(self.consumer_throughput_queue)
             if data is None:
                 continue
-            print(f"Ignoring data {data} on consumer throughput queue...")
+            print(f"[CheckConsumerThroughputProcess] - Ignoring data {data} on consumer throughput queue...")
             consumer_dict[data["consumer_id"]] = 1
 
         # continue reading from queue
@@ -47,7 +47,7 @@ class CheckConsumerThroughputProcess(BaseProcess):
                 # to avoid "incorrect" degradation reports
                 for key in self.consumer_throughput_dict.keys():
                     self.consumer_throughput_dict[key].clear()
-                print("Flushed consumer throughput values.")
+                print("[CheckConsumerThroughputProcess] - Flushed consumer throughput values.")
                 self.previous_num_producers = num_producers
 
             if not self.configuration["ignore_throughput_threshold"]:
@@ -62,18 +62,18 @@ class CheckConsumerThroughputProcess(BaseProcess):
 
                     # calculate the mean
                     consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
-                    print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                    print(f"[CheckConsumerThroughputProcess] - Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
                     consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 
                     if consumer_throughput_average < consumer_throughput_tolerance:
                         # below threshold
                         self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
-                        print(f"Warning: Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}, # exceptions {self.threshold_exceeded[consumer_id]}")
+                        print(f"[CheckConsumerThroughputProcess] - Warning: Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}, # exceptions {self.threshold_exceeded[consumer_id]}")
 
                         # stop after 3 consecutive threshold events
                         if self.threshold_exceeded[consumer_id] >= 3:
-                            print("Stopping after multiple throughput below tolerance...")
+                            print("[CheckConsumerThroughputProcess] - Stopping after multiple throughput below tolerance...")
                             self.stop()
                     else:
                         # above threshold, reset the threshold events

@@ -25,7 +25,7 @@ class SoakTestProcess(BaseProcess):
 
     def decrement_producer_count(self):
         producer_count = self.get_producer_count()
-        print(f"Current producer count is {producer_count}")
+        print(f"[SoakTestProcess] - Current producer count is {producer_count}")
 
         if producer_count > 0:
             # decrement the producer count
@@ -34,9 +34,9 @@ class SoakTestProcess(BaseProcess):
             # decrement the producer count
             self.k8s_scale_producers(producer_count)
 
-            print(f"Decrementing the producer count to {producer_count}")
+            print(f"[SoakTestProcess] - Decrementing the producer count to {producer_count}")
         else:
-            print("Producer count is zero.")
+            print("[SoakTestProcess] - Producer count is zero.")
 
     def run(self):
         # decrement the number of running producers
@@ -63,18 +63,18 @@ class SoakTestProcess(BaseProcess):
                 self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-5:]
 
                 consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
-                print(f"Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                print(f"[SoakTestProcess] - Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
                 consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 
                 if consumer_throughput_average < consumer_throughput_tolerance:
                     print(
-                        f"Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
+                        f"[SoakTestProcess] - Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
                     self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
                     # check for consecutive threshold events
                     if self.threshold_exceeded[consumer_id] >= 3:
-                        print("Threshold (still) exceeded: decrementing producer count...")
+                        print("[SoakTestProcess] - Threshold (still) exceeded: decrementing producer count...")
                         self.decrement_producer_count()
                         self.threshold_exceeded[consumer_id] = 0
                 else:
@@ -92,15 +92,15 @@ class SoakTestProcess(BaseProcess):
                     break
 
         num_producers = self.get_producer_count()
-        print(f"Throughput stability achieved @ {num_producers} producers.")
+        print(f"[SoakTestProcess] - Throughput stability achieved @ {num_producers} producers.")
 
         # start soak test once stability achieved
         num_brokers = self.configuration["number_of_brokers"]
         if num_producers > 0:
             soak_test_ms = ((SOAK_TEST_S * num_brokers) / num_producers) * 1000
-            print(f"Running soak test for {soak_test_ms/1000} seconds.")
+            print(f"[SoakTestProcess] - Running soak test for {soak_test_ms/1000} seconds.")
         else:
-            print("No producers: aborting soak test...")
+            print("[SoakTestProcess] - No producers: aborting soak test...")
             self.stop()
             return
 
@@ -111,6 +111,6 @@ class SoakTestProcess(BaseProcess):
                 # print("Nothing on consumer throughput queue...")
                 time.sleep(.10)
                 continue
-            print("Received data from consumer throughput queue.")
+            print("[SoakTestProcess] - Received data from consumer throughput queue.")
 
-        print(f"Soak test complete after {soak_test_ms/1000} seconds.")
+        print(f"[SoakTestProcess] - Soak test complete after {soak_test_ms/1000} seconds.")

@@ -26,7 +26,7 @@ class Controller:
         # template configuration
         # 5 brokers, 3 ZK
         self.configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1,
-                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 0,
+                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 20,
                                   "machine_size": "n1-highmem-4", "disk_size": 100,
                                   "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8",
                                   "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
@@ -104,7 +104,7 @@ class Controller:
             self.soak_test_process.stop()
 
     def teardown_configuration(self, configuration):
-        print(f"\r\n4. Teardown configuration: {configuration}")
+        print(f"\r\n[Controller] - 4. Teardown configuration: {configuration}")
 
         # ensure threads are stopped
         self.stop_threads()
@@ -122,14 +122,14 @@ class Controller:
         if configuration["teardown_broker_nodes"]:
           self.unprovision_node_pool(configuration)
         else:
-          print("Broker nodes left standing.")
+          print("[Controller] - Broker nodes left standing.")
 
     def k8s_deploy_zk(self):
         """
         run a script to deploy ZK
         :return:
         """
-        print(f"Deploying ZK...")
+        print(f"[Controller] - Deploying ZK...")
 
         filename = "./deploy-zk.sh"
         args = [filename]
@@ -143,44 +143,44 @@ class Controller:
         :param replication_factor:
         :return:
         """
-        print(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}...")
+        print(f"[Controller] - Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}...")
         filename = "./deploy-kafka.sh"
         args = [filename, str(num_partitions), str(replication_factor)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     # run a script to deploy producers/consumers
     def k8s_deploy_burrow(self):
-        print(f"Deploying Burrow...")
+        print(f"[Controller] - Deploying Burrow...")
         filename = "./deploy.sh"
         args = [filename]
         self.bash_command_with_wait(args, BURROW_DIR)
 
         # now wait for burrow external IP to be assigned
-        print("Waiting 60s for Burrow external IP...")
+        print("[Controller] - Waiting 60s for Burrow external IP...")
         time.sleep(60)
 
     # run a script to deploy producers/consumers
     def k8s_deploy_producers_consumers(self):
-        print(f"Deploying producers/consumers")
+        print(f"[Controller] - Deploying producers/consumers")
         filename = "./deploy/gcp/deploy.sh"
         args = [filename]
         self.bash_command_with_wait(args, PRODUCERS_CONSUMERS_DEPLOY_DIR)
 
     def k8s_scale_brokers(self, broker_count):
-        print(f"Scaling brokers, broker_count={broker_count}")
+        print(f"[Controller] - Scaling brokers, broker_count={broker_count}")
         # run a script to start brokers
         filename = "./scale-brokers.sh"
         args = [filename, str(broker_count)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_configure_producers(self, start_producer_count, message_size):
-        print(f"Configure producers, start_producer_count={start_producer_count}, message_size={message_size}")
+        print(f"[Controller] - Configure producers, start_producer_count={start_producer_count}, message_size={message_size}")
         filename = "./configure-producers.sh"
         args = [filename, str(start_producer_count), str(message_size)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_scale_consumers(self, num_consumers):
-        print(f"Configure consumers, num_consumers={num_consumers}")
+        print(f"[Controller] - Configure consumers, num_consumers={num_consumers}")
         filename = "./scale-consumers.sh"
         args = [filename, str(num_consumers)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
@@ -195,7 +195,7 @@ class Controller:
         except ValueError:
             pass
 
-        print(f"zk={zk_count}")
+        # print(f"zk={zk_count}")
         return zk_count
 
     def get_broker_count(self):
@@ -208,7 +208,7 @@ class Controller:
         except ValueError:
             pass
 
-        print(f"broker_count={broker_count}")
+        # print(f"broker_count={broker_count}")
         return broker_count
 
     def check_brokers(self, expected_broker_count):
@@ -229,42 +229,45 @@ class Controller:
             time.sleep(WAIT_INTERVAL)
 
             check_zks = self.check_zookeepers(num_zk)
-            print(f"Waiting for zks to start...{i}/{attempts}")
+            print(f"[Controller] - Waiting for zks to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                print("Error: Time-out waiting for zks to start.")
+                print("[Controller] - Error: Time-out waiting for zks to start.")
                 return False
 
-        print("ZKs started ok.")
+        print("[Controller] - ZKs started ok.")
         return True
 
     def check_brokers_ok(self, configuration):
-        i = 1
-        attempts = configuration["number_of_brokers"] * 5
-        check_brokers = self.check_brokers(configuration["number_of_brokers"])
-        while not check_brokers:
-            # allow 20s per broker 
-            time.sleep(20)
+        # allow 30s per broker
+        WAIT_INTERVAL = 10
+        num_brokers = configuration["number_of_brokers"]
+        attempts = (30 * num_brokers) / WAIT_INTERVAL
 
-            check_brokers = self.check_brokers(configuration["number_of_brokers"])
-            print(f"Waiting for brokers to start...{i}/{attempts}")
+        check_brokers = self.check_brokers(num_brokers)
+        i = 1
+        while not check_brokers:
+            time.sleep(WAIT_INTERVAL)
+
+            check_brokers = self.check_brokers(num_brokers)
+            print(f"[Controller] - Waiting for brokers to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                print("Error: Time-out waiting for brokers to start.")
+                print("[Controller] - Error: Time-out waiting for brokers to start.")
                 return False
 
-        print("Brokers started ok.")
+        print("[Controller] - Brokers started ok.")
         return True
 
     # run a script to configure gcloud
     def configure_gcloud(self, cluster_name, cluster_zone):
-        print(f"configure_gcloud, cluster_name={cluster_name}, cluster_zone={cluster_zone}")
+        # print(f"configure_gcloud, cluster_name={cluster_name}, cluster_zone={cluster_zone}")
         filename = "./configure-gcloud.sh"
         args = [filename, cluster_name, cluster_zone]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def setup_configuration(self, configuration):
-        print(f"\r\n2. Setup configuration: {configuration}")
+        print(f"\r\n[Controller] - 2. Setup configuration: {configuration}")
 
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
@@ -274,7 +277,7 @@ class Controller:
 
         all_ok = self.check_zk_ok(configuration)
         if not all_ok:
-            print("Aborting configuration - ZK not ok.")
+            print("[Controller] - Aborting configuration - ZK not ok.")
             return False
 
         # deploy kafka brokers
@@ -289,7 +292,7 @@ class Controller:
 
         all_ok = self.check_brokers_ok(configuration)
         if not all_ok:
-            print("Aborting configuration - brokers not ok.")
+            print("[Controller] - Aborting configuration - brokers not ok.")
             return False
 
         # deploy producers/consumers
@@ -308,7 +311,7 @@ class Controller:
 
     def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
-        print(args)
+        # print(args)
         p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
         p.wait()
         out = p.communicate()[0].decode("UTF-8")
@@ -316,18 +319,18 @@ class Controller:
 
     def bash_command_with_wait(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
-        print(args)
+        # print(args)
         try:
             subprocess.check_call(args, stderr=subprocess.STDOUT, cwd=working_directory)
         except subprocess.CalledProcessError as e:
             # There was an error - command exited with non-zero code
-            print(e.output)
+            print("[Controller] - " + e.output)
             return False
 
         return True
 
     def run_stress_test(self, configuration, queue):
-        print(f"\r\n3. Running stress test.")
+        print(f"\r\n[Controller] - 3. Running stress test.")
         self.consumer_throughput_process = CheckConsumerThroughputProcess(configuration, queue)
         self.producer_increment_process = ProducerIncrementProcess(configuration, queue)
 
@@ -344,7 +347,7 @@ class Controller:
         print(f"\r\n3. Stress test completed.")
 
     def run_soak_test(self, configuration, queue):
-        print(f"\r\n3. Running soak test.")
+        print(f"\r\n[Controller] - 3. Running soak test.")
 
         self.soak_test_process = SoakTestProcess(configuration, queue)
 
@@ -357,7 +360,7 @@ class Controller:
         print(f"\r\n3. Soak test completed.")
 
     def run_configuration(self, configuration):
-        print(f"\r\n3. Running configuration: {configuration}")
+        print(f"\r\n[Controller] - 3. Running configuration: {configuration}")
 
         # Configure producers with required number of initial producers and their message size
         # Note - number of producers may be greater than 0
@@ -406,7 +409,7 @@ class Controller:
         return configurations
 
     def provision_node_pool(self, configuration):
-        print(f"\r\n1. Provisioning node pool.")
+        print(f"\r\n[Controller] - 1. Provisioning node pool.")
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], configuration["disk_type"], str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
@@ -423,7 +426,7 @@ class Controller:
         print("Node pool provisioned.")
 
     def unprovision_node_pool(self, configuration):
-        print(f"\r\n5. Unprovisioning node pool: {configuration}")
+        print(f"\r\n[Controller] - 5. Unprovisioning node pool: {configuration}")
         filename = "./unprovision.sh"
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
