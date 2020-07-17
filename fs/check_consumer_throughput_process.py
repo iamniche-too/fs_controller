@@ -1,4 +1,3 @@
-import threading
 import time
 from statistics import mean
 from collections import defaultdict

@@ -23,12 +23,14 @@ class Controller:
         self.consumer_throughput_process = None
         self.soak_test_process = None
 
+        # template configuration
+        # 5 brokers, 3 ZK
         self.configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1,
                                   "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 0,
                                   "machine_size": "n1-highmem-4", "disk_size": 100,
                                   "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8",
                                   "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
-                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": False, "replication_factor": 1}
+                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": False, "replication_factor": 1, "num_zk": 3}
 
         # default the number of partitions
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
@@ -110,7 +112,7 @@ class Controller:
         # Remove producers & consumers
         self.k8s_delete_namespace(PRODUCER_CONSUMER_NAMESPACE)
 
-        # Remove kafka brokers
+        # Remove kafka brokers & ZK
         self.k8s_delete_namespace(KAFKA_NAMESPACE)
 
         # flush the consumer throughput queue
@@ -122,10 +124,27 @@ class Controller:
         else:
           print("Broker nodes left standing.")
 
-    # run a script to deploy kafka
+    def k8s_deploy_zk(self):
+        """
+        run a script to deploy ZK
+        :return:
+        """
+        print(f"Deploying ZK...")
+
+        filename = "./deploy-zk.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
+
     def k8s_deploy_kafka(self, num_partitions, replication_factor):
+        """
+        # run a script to deploy kafka
+
+        :param num_partitions:
+        :param replication_factor:
+        :return:
+        """
         print(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}...")
-        filename = "./deploy.sh"
+        filename = "./deploy-kafka.sh"
         args = [filename, str(num_partitions), str(replication_factor)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
@@ -166,18 +185,6 @@ class Controller:
         args = [filename, str(num_consumers)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
-    def check_k8s(self):
-        print(f"Checking K8S...")
-        filename = "./check_k8s.sh"
-        args = [filename]
-        output = self.bash_command_with_output(args, SCRIPT_DIR)
-        service_count = int(output)
-        print(f"k8s service count={service_count}")
-        if service_count < K8S_SERVICE_COUNT:
-            return False
-        else:
-            return True
-
     def get_zookeepers_count(self):
         filename = "./get-zookeepers-count.sh"
         args = [filename]
@@ -210,14 +217,18 @@ class Controller:
     def check_zookeepers(self, expected_zk_count):
         return self.get_zookeepers_count() == expected_zk_count
 
-    def check_zookeepers_ok(self):
-        i = 1
-        attempts = 7
-        check_zks = self.check_zookeepers(3)
-        while not check_zks:
-            time.sleep(20)
+    def check_zk_ok(self, configuration):
+        # allow 46s per ZK
+        WAIT_INTERVAL = 10
+        num_zk = configuration["num_zk"]
+        attempts = (46 * num_zk) / WAIT_INTERVAL
 
-            check_zks = self.check_zookeepers(3)
+        check_zks = self.check_zookeepers(num_zk)
+        i = 1
+        while not check_zks:
+            time.sleep(WAIT_INTERVAL)
+
+            check_zks = self.check_zookeepers(num_zk)
             print(f"Waiting for zks to start...{i}/{attempts}")
             i += 1
             if i > attempts:
@@ -258,10 +269,13 @@ class Controller:
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
-        # check K8s & warn (rather than fail)
-        all_ok = self.check_k8s()
+        # Note - hard-coded to 3 ZK in zookeeper-3.4.14/zookeeper-statefulset.yaml
+        self.k8s_deploy_zk(configuration)
+
+        all_ok = self.check_zk_ok()
         if not all_ok:
-            print("Warning - Check K8S Services (fewer services running than expected).")
+            print("Aborting configuration - ZK not ok.")
+            return False
 
         # deploy kafka brokers
         # where num_partitions = max(#P, #C), where #P = TT / 75)
