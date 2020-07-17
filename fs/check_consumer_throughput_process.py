@@ -20,10 +20,6 @@ class CheckConsumerThroughputProcess(ThroughputProcess):
         """
         super().throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
 
-        self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
-        print(
-            f"[CheckConsumerThroughputProcess] - Warning: Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}, # exceptions {self.threshold_exceeded[consumer_id]}")
-
         # stop after 3 consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:
             print(

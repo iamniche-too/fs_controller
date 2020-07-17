@@ -38,7 +38,7 @@ class ThroughputProcess(BaseProcess):
 
     def check_throughput(self):
         window_size = INITIAL_WINDOW_SIZE
-
+        self.previous_num_producers = self.get_producer_count()
         while not self.is_stopped():
             data = self.get_data(self.consumer_throughput_queue)
             if data is None:
@@ -53,7 +53,7 @@ class ThroughputProcess(BaseProcess):
             # since if it has we want to flush the throughput values
             if self.previous_num_producers != num_producers:
                 # set window size (since initial window size is only while initial producers are starting)
-                window_size = 5
+                # window_size = 5
 
                 # A new producer has started, therefore clear the throughput entries for all consumers
                 # to avoid "incorrect" degradation reports

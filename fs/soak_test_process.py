@@ -66,9 +66,6 @@ class SoakTestProcess(ThroughputProcess):
             # reset the thresholds
             self.threshold_exceeded[consumer_id] = 0
 
-            # reset the throughput list for this particular consumer
-            self.consumer_throughput_dict[consumer_id].clear()
-
     def run(self):
         print("[SoakTestProcess] - started.")
 
