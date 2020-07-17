@@ -74,8 +74,6 @@ class SoakTestProcess(ThroughputProcess):
     def run(self):
         print("[SoakTestProcess] - started.")
 
-        # decrement the number of running producers
-        self.decrement_producer_count()
         self.check_throughput()
 
         num_producers = self.get_producer_count()
@@ -92,8 +90,8 @@ class SoakTestProcess(ThroughputProcess):
             return
 
         start_time_ms = time.time()
-        run_time_ms = time.time() - start_time_ms
-        while not self.is_stopped() and run_time_ms <= soak_test_ms:
+        run_time_ms = 0
+        while not self.is_stopped():
             data = self.get_data(self.consumer_throughput_queue)
             if data is None:
                 # print("Nothing on consumer throughput queue...")
@@ -104,8 +102,13 @@ class SoakTestProcess(ThroughputProcess):
             throughput = data["throughput"]
             self.consumer_throughput_dict[consumer_id].append(throughput)
             consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][-5:])
-            print(f"[SoakTestProcess] - {run_time_ms} / {soak_test_ms} ms Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
+            print(
+                f"[SoakTestProcess] - {run_time_ms/1000}s of {soak_test_ms/1000}s Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+
+            # update the timings
             run_time_ms = time.time() - start_time_ms
+            if run_time_ms > soak_test_ms:
+                break
 
         print(f"[SoakTestProcess] - Soak test complete after {soak_test_ms/1000} seconds.")

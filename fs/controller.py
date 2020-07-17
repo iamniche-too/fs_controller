@@ -316,7 +316,10 @@ class Controller:
 
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
-        
+
+        # wait for consumers to start
+        time.sleep(5)
+
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
 
