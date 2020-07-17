@@ -34,12 +34,13 @@ class ProducerIncrementProcess(BaseProcess):
 
         self.wait()
 
-        # begin incrementing
-        while not self.is_stopped() and (desired_producer_count <= self.configuration["max_producer_count"]):
+        # increment the producer count
+        desired_producer_count = actual_producer_count
+        while not self.is_stopped() and (desired_producer_count < self.configuration["max_producer_count"]):
             desired_producer_count += 1
 
             if not self.is_stopped():
-                print(f"[ProducerIncrementProcess] - Starting next producer...")
-                self.k8s_scale_producers(str(desired_producer_count))
+                print(f"[ProducerIncrementProcess] - Starting producer, desired_producer_count={desired_producer_count}")
+                self.k8s_scale_producers(desired_producer_count)
 
             self.wait()
