@@ -22,6 +22,7 @@ class SoakTestProcess(ThroughputProcess):
         self.consumer_throughput_queue = queue
         self.consumer_throughput_dict = defaultdict(list)
         self.threshold_exceeded = {}
+        self.expected_num_producers = 0
 
     def decrement_producer_count(self):
         producer_count = self.get_producer_count()
@@ -61,15 +62,21 @@ class SoakTestProcess(ThroughputProcess):
             self.decrement_producer_count()
 
             # wait for the producer count to settle
-            self.check_producer_count(num_producers - 1)
+            self.expected_num_producers = num_producers - 1
+            self.check_producer_count(self.expected_num_producers)
 
             # reset the thresholds
             self.threshold_exceeded[consumer_id] = 0
 
+    def ignore_data(self, num_producers):
+        if self.expected_num_producers != num_producers:
+            print("[SoakTestProcess - ignoring (lag) data since wrong num_producers.")
+            return True
+
     def run(self):
         print("[SoakTestProcess] - started.")
 
-        self.check_throughput()
+        self.check_throughput(window_size=5)
 
         num_producers = self.get_producer_count()
         print(f"[SoakTestProcess] - Throughput stability achieved @ {num_producers} producers.")
