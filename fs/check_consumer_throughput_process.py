@@ -42,13 +42,13 @@ class CheckConsumerThroughputProcess(BaseProcess):
             num_producers = data["producer_count"]
 
             # detect if the num_producers has changed
+            # since if it has we want to flush the throughput values
             if self.previous_num_producers != num_producers:
                 # A new producer has started, therefore clear the throughput entries for all consumers
                 # to avoid "incorrect" degradation reports
                 for key in self.consumer_throughput_dict.keys():
                     self.consumer_throughput_dict[key].clear()
                 print("Flushed consumer throughput values.")
-
                 self.previous_num_producers = num_producers
 
             if not self.configuration["ignore_throughput_threshold"]:
