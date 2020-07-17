@@ -148,6 +148,16 @@ class Controller:
         args = [filename, str(num_partitions), str(replication_factor)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
+    def get_burrow_ip(self):
+        filename = "./get-burrow-external-ip.sh"
+        args = [filename]
+        try:
+            burrow_ip = self.bash_command_with_output(args, SCRIPT_DIR)
+        except ValueError:
+            pass
+
+        return burrow_ip
+
     # run a script to deploy producers/consumers
     def k8s_deploy_burrow(self):
         print(f"[Controller] - Deploying Burrow...")
@@ -155,9 +165,13 @@ class Controller:
         args = [filename]
         self.bash_command_with_wait(args, BURROW_DIR)
 
-        # now wait for burrow external IP to be assigned
-        print("[Controller] - Waiting 60s for Burrow external IP...")
-        time.sleep(60)
+        # wait for burrow external IP to be assigned
+        print("[Controller] - Waiting for Burrow external IP...")
+        burrow_ip = self.get_burrow_ip()
+        while burrow_ip is None:
+            time.sleep(5)
+
+        print(f"[Controller] - Burrow external IP: {burrow_ip}")
 
     # run a script to deploy producers/consumers
     def k8s_deploy_producers_consumers(self):
