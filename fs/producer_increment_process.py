@@ -15,7 +15,7 @@ class ProducerIncrementProcess(BaseProcess):
     def wait(self):
         # Wait for a specified interval before starting the next producer
         producer_increment_interval_sec = self.configuration["producer_increment_interval_sec"]
-        print(f"Waiting {producer_increment_interval_sec}s before starting next producer.")
+        print(f"[ProducerIncrementProcess] - Waiting {producer_increment_interval_sec}s before starting next producer.")
         time.sleep(producer_increment_interval_sec)
 
     def run(self):
@@ -28,7 +28,7 @@ class ProducerIncrementProcess(BaseProcess):
             actual_producer_count = self.get_producer_count()
 
             if i % 5 == 0:
-                print(f"[ProducerIncrementProcess] - waiting for producer(s) to start, actual_producer_count={producer_count}, initial_producer_count={initial_producer_count}")
+                print(f"[ProducerIncrementProcess] - waiting for producer(s) to start, actual_producer_count={actual_producer_count}, initial_producer_count={initial_producer_count}")
 
             i += 1
 

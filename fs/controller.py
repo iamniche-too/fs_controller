@@ -221,7 +221,7 @@ class Controller:
         # allow 46s per ZK
         WAIT_INTERVAL = 10
         num_zk = configuration["num_zk"]
-        attempts = (46 * num_zk) / WAIT_INTERVAL
+        attempts = (45 * num_zk) / WAIT_INTERVAL
 
         check_zks = self.check_zookeepers(num_zk)
         i = 1
@@ -242,7 +242,7 @@ class Controller:
         # allow 30s per broker
         WAIT_INTERVAL = 10
         num_brokers = configuration["number_of_brokers"]
-        attempts = (30 * num_brokers) / WAIT_INTERVAL
+        attempts = (45 * num_brokers) / WAIT_INTERVAL
 
         check_brokers = self.check_brokers(num_brokers)
         i = 1

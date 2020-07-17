@@ -31,13 +31,14 @@ class BaseProcess(StoppableProcess):
                 print(f"Warning: unable to delete job {job}, {e}", e)
 
         except greenstalk.TimedOutError:
-            print("Warning: nothing in consumer throughput queue.")
+            # mute for output sake
+            # print("[BaseProcess] - Warning: nothing in consumer throughput queue.")
         except greenstalk.UnknownResponseError:
-            print("Warning: unknown response from beanstalkd server.")
+            print("[BaseProcess] - Warning: unknown response from beanstalkd server.")
         except greenstalk.DeadlineSoonError:
-            print("Warning: job timeout in next second.")
+            print("[BaseProcess] - Warning: job timeout in next second.")
         except ConnectionError as ce:
-            print(f"Error: ConnectionError: {ce}")
+            print(f"[BaseProcess] - Error: ConnectionError: {ce}")
 
         return data
 
