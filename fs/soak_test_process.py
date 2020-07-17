@@ -97,14 +97,15 @@ class SoakTestProcess(BaseProcess):
         # start soak test once stability achieved
         num_brokers = self.configuration["number_of_brokers"]
         if num_producers > 0:
-            soak_test_s = (SOAK_TEST_S * num_brokers) / num_producers
-            print(f"Running soak test for {soak_test_s} seconds.")
+            soak_test_ms = ((SOAK_TEST_S * num_brokers) / num_producers) * 1000
+            print(f"Running soak test for {soak_test_ms/1000} seconds.")
         else:
             print("No producers: aborting soak test...")
             self.stop()
+            return
 
-        start_time = time.now()
-        while not self.is_stopped() and ((time.now() - start_time) <= soak_test_s):
+        start_time_ms = time.time()
+        while not self.is_stopped() and ((time.time() - start_time_ms) <= soak_test_ms):
             data = self.get_data(self.consumer_throughput_queue)
             if data is None:
                 # print("Nothing on consumer throughput queue...")
@@ -112,4 +113,4 @@ class SoakTestProcess(BaseProcess):
                 continue
             print("Received data from consumer throughput queue.")
 
-        print(f"Soak test complete after {soak_test_s} seconds.")
+        print(f"Soak test complete after {soak_test_ms/1000} seconds.")
