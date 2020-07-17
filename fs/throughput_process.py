@@ -1,5 +1,5 @@
+import time
 from collections import defaultdict
-from datetime import time
 from statistics import mean
 
 from fs.base_process import BaseProcess

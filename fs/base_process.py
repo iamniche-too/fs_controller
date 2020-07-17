@@ -1,6 +1,6 @@
 import json
 import subprocess
-from datetime import time
+import time
 
 import greenstalk
 
