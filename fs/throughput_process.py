@@ -32,6 +32,10 @@ class ThroughputProcess(BaseProcess):
             f"[ThroughputProcess] - Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
         self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
+    def break_loop(self):
+        # default is not to break loop
+        return False
+
     def check_throughput(self):
         window_size = INITIAL_WINDOW_SIZE
 
@@ -79,6 +83,7 @@ class ThroughputProcess(BaseProcess):
                     if consumer_throughput_average < consumer_throughput_tolerance:
                         self.throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
                     else:
-                        break_loop = self.throughput_ok(consumer_id)
-                        if break_loop:
+                        self.throughput_ok(consumer_id)
+
+                        if self.break_loop():
                             break

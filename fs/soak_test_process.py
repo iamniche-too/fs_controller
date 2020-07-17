@@ -38,9 +38,7 @@ class SoakTestProcess(ThroughputProcess):
         else:
             print("[SoakTestProcess] - Producer count is zero.")
 
-    def throughput_ok(self, consumer_id):
-        super().throughput_ok(consumer_id)
-
+    def break_loop(self):
         # Check each consumer to see if we are stable
         is_stable = True
         for consumer_id in self.threshold_exceeded.keys():
