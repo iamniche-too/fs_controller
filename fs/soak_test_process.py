@@ -50,8 +50,8 @@ class SoakTestProcess(ThroughputProcess):
 
         return is_stable
 
-    def throughput_exceeded(self, consumer_id):
-        super().throughput_exceeded(consumer_id)
+    def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
+        super().throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
 
         # check for consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:

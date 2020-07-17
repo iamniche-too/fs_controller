@@ -11,14 +11,14 @@ class CheckConsumerThroughputProcess(ThroughputProcess):
     """
     Check consumer throughput process
     """
-    def throughput_tolerance_exceeded(self, consumer_id):
+    def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         """
         Throughput below tolerance
 
         :param consumer_id:
         :return:
         """
-        super().throughput_tolerance_exceeded(consumer_id)
+        super().throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
 
         self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
         print(
