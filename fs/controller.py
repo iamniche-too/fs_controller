@@ -324,7 +324,7 @@ class Controller:
             subprocess.check_call(args, stderr=subprocess.STDOUT, cwd=working_directory)
         except subprocess.CalledProcessError as e:
             # There was an error - command exited with non-zero code
-            print("[Controller] - " + e.output)
+            print(f"[Controller] - {e.output}")
             return False
 
         return True
