@@ -26,7 +26,7 @@ class Controller:
         # template configuration
         # 5 brokers, 3 ZK
         self.configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1,
-                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 20,
+                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 30,
                                   "machine_size": "n1-highmem-4", "disk_size": 100,
                                   "producer_increment_interval_sec": 10, "machine_size": "n1-standard-8",
                                   "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
@@ -358,6 +358,11 @@ class Controller:
 
         # degradation occurred, stop the producer increment thread
         self.producer_increment_process.stop()
+
+        # wait for the producer increment process to exit
+        # worst case scenario is that it is already waiting to increment a producer...
+        print("Waiting for producer increment process to exit...")
+        time.sleep(configuration["producer_increment_interval_sec"])
 
         print(f"\r\n3. Stress test completed.")
 

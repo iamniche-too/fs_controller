@@ -48,6 +48,8 @@ class SoakTestProcess(BaseProcess):
         print(f"[ProducerIncrementProcess] - actual_producer_count={actual_producer_count}")
 
     def run(self):
+        print("[SoakTestProcess] - started.")
+
         # decrement the number of running producers
         self.decrement_producer_count()
 

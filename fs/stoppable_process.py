@@ -10,7 +10,7 @@ class StoppableProcess(multiprocessing.Process):
         self._stop_event = multiprocessing.Event()
 
     def stop(self):
-        print("StoppableProcess - stop called...")
+        print("[StoppableProcess] - stop called...")
         self._stop_event.set()
 
     def is_stopped(self):

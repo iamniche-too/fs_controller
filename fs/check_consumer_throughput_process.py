@@ -19,16 +19,8 @@ class CheckConsumerThroughputProcess(BaseProcess):
         self.previous_num_producers = 0
 
     def run(self):
-        # Ignore the first entry for all consumers
-        consumer_dict = defaultdict()
-        while len(consumer_dict.keys()) < int(self.configuration["num_consumers"]):
-            data = self.get_data(self.consumer_throughput_queue)
-            if data is None:
-                continue
-            print(f"[CheckConsumerThroughputProcess] - Ignoring data {data} on consumer throughput queue...")
-            consumer_dict[data["consumer_id"]] = 1
+        print("[CheckConsumerThroughputProcess] - started.")
 
-        # continue reading from queue
         while not self.is_stopped():
             data = self.get_data(self.consumer_throughput_queue)
             if data is None:
@@ -47,6 +39,7 @@ class CheckConsumerThroughputProcess(BaseProcess):
                 # to avoid "incorrect" degradation reports
                 for key in self.consumer_throughput_dict.keys():
                     self.consumer_throughput_dict[key].clear()
+
                 print("[CheckConsumerThroughputProcess] - Flushed consumer throughput values.")
                 self.previous_num_producers = num_producers
 
@@ -79,4 +72,6 @@ class CheckConsumerThroughputProcess(BaseProcess):
                         # above threshold, reset the threshold events
                         # (as they must be consecutive to stop the thread)
                         self.threshold_exceeded[consumer_id] = 0
+
+        print("[CheckConsumerThroughputProcess] - ended.")
 
