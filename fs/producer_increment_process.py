@@ -18,15 +18,6 @@ class ProducerIncrementProcess(BaseProcess):
         print(f"[ProducerIncrementProcess] - Waiting {producer_increment_interval_sec}s before starting next producer.")
         time.sleep(producer_increment_interval_sec)
 
-    def check_producer_count(self, desired_producer_count):
-        actual_producer_count = self.get_producer_count()
-        while not self.is_stopped() and actual_producer_count < desired_producer_count:
-            time.sleep(5)
-            actual_producer_count = self.get_producer_count()
-            print(f"[ProducerIncrementProcess] - actual_producer_count={actual_producer_count}, desired_producer_count={desired_producer_count}")
-
-        print(f"[ProducerIncrementProcess] - actual_producer_count={actual_producer_count}")
-
     def check_and_wait(self, desired_producer_count):
         # check the producer count is correct
         self.check_producer_count(desired_producer_count)

@@ -38,15 +38,6 @@ class SoakTestProcess(ThroughputProcess):
         else:
             print("[SoakTestProcess] - Producer count is zero.")
 
-    def check_producer_count(self, desired_producer_count):
-        actual_producer_count = self.get_producer_count()
-        while not self.is_stopped() and actual_producer_count < desired_producer_count:
-            time.sleep(5)
-            actual_producer_count = self.get_producer_count()
-            print(f"[ProducerIncrementProcess] - actual_producer_count={actual_producer_count}, desired_producer_count={desired_producer_count}")
-
-        print(f"[ProducerIncrementProcess] - actual_producer_count={actual_producer_count}")
-
     def throughput_ok(self, consumer_id):
         super().throughput_ok(consumer_id)
 
@@ -64,7 +55,7 @@ class SoakTestProcess(ThroughputProcess):
 
         # check for consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:
-            print("[SoakTestProcess] - Threshold (still) exceeded: decrementing producer count...")
+            print("[SoakTestProcess] - Threshold exceeded.")
 
             num_producers = self.get_producer_count()
 
