@@ -15,7 +15,8 @@ class ThroughputProcess(BaseProcess):
         self.configuration = configuration
         self.consumer_throughput_queue = queue
         self.threshold_exceeded = {}
-        self.consumer_throughput_dict = defaultdict(list)
+        # initialise empty dict with empty dict of lists
+        self.consumer_throughput_dict = defaultdict(lambda: defaultdict(list))
         self.previous_num_producers = 0
 
     def throughput_ok(self, consumer_id):
@@ -36,30 +37,6 @@ class ThroughputProcess(BaseProcess):
         # default is not to break loop
         return False
 
-    def flush_throughputs(self):
-        # A new producer has started, therefore clear the throughput entries for all consumers
-        # to avoid "incorrect" degradation reports
-        for key in self.consumer_throughput_dict.keys():
-            self.consumer_throughput_dict[key].clear()
-
-        print("[ThroughputProcess] - Flushed consumer throughput values.")
-
-    def detect_producer_count_change(self, num_producers):
-        # detect if the num_producers has changed
-        # since if it has we want to flush the throughput values
-        if self.previous_num_producers != num_producers:
-            self.flush_throughputs()
-            self.previous_num_producers = num_producers
-
-    def ignore_data(self, num_producers):
-        """
-        Defalt implementation will never ignore
-
-        :param num_producers:
-        :return:
-        """
-        return False
-
     def check_throughput(self, window_size=INITIAL_WINDOW_SIZE):
 
         while not self.is_stopped():
@@ -72,23 +49,19 @@ class ThroughputProcess(BaseProcess):
             throughput = data["throughput"]
             num_producers = data["producer_count"]
 
-            if self.ignore_data(num_producers):
-                continue
+            # append throughput to specific list (as keyed by num_producers
+            self.consumer_throughput_dict[consumer_id][num_producers].append(throughput)
 
-            self.detect_producer_count_change(num_producers)
+            actual_producer_count = self.get_producer_count()
 
-            if not self.configuration["ignore_throughput_threshold"]:
-                # detect ANY consumer that has throughput below a threshold
-
-                # append to specific list (as stored in dict)
-                self.consumer_throughput_dict[consumer_id].append(throughput)
-
-                if len(self.consumer_throughput_dict[consumer_id]) >= window_size:
+            if not self.configuration["ignore_throughput_threshold"] and num_producers == actual_producer_count:
+                # detect threshold event if relevant to actual producer count
+                if len(self.consumer_throughput_dict[consumer_id][actual_producer_count]) >= window_size:
                     # truncate list to last x entries
-                    self.consumer_throughput_dict[consumer_id] = self.consumer_throughput_dict[consumer_id][-window_size:]
+                    self.consumer_throughput_dict[consumer_id][actual_producer_count] = self.consumer_throughput_dict[consumer_id][actual_producer_count][-window_size:]
 
                     # calculate the mean
-                    consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id])
+                    consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][actual_producer_count])
                     print(
                         f"[ThroughputProcess] - Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
