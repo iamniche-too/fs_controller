@@ -15,7 +15,7 @@ BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
 DEFAULT_CONSUMER_TOLERANCE = 0.95
 DEFAULT_THROUGHPUT_MB_S = 75
 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-10be324630b0@kafka-k8s-trial.iam.gserviceaccount.com"
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-321425ba4ce3@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
