@@ -51,7 +51,7 @@ class ThroughputProcess(BaseProcess):
         if self.throughput_count > 3:
             # append throughput to specific list (as keyed by num_producers)
             self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
-        else
+        else:
             print("[ThroughputProcess] - Discarding initial throughput value...")
             self.throughput_count += 1
 
