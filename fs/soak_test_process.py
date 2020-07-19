@@ -1,12 +1,10 @@
 import time
 from statistics import mean
-from collections import defaultdict
 
 # A 21GB pagefile can cache:
 # 168Gb / (0.59 * p / n) == 285 * n / p seconds of data.
 # 110% = 313s
 from fs.throughput_process import ThroughputProcess
-from fs.utils import DEFAULT_THROUGHPUT_MB_S, DEFAULT_CONSUMER_TOLERANCE
 
 SOAK_TEST_S = 313
 
@@ -15,18 +13,22 @@ class SoakTestProcess(ThroughputProcess):
     """
     Soak test process
     """
+    def __init__(self, configuration, queue):
+        super().__init__(configuration, queue)
+        self.desired_producer_count = 0
+
     def decrement_producer_count(self):
-        producer_count = self.get_producer_count()
+        actual_producer_count = self.get_producer_count()
         print(f"[SoakTestProcess] - Current producer count is {producer_count}")
 
-        if producer_count > 0:
+        if actual_producer_count > 0:
             # decrement the producer count
-            producer_count -= 1
+            self.desired_producer_count = actual_producer_count - 1
 
             # decrement the producer count
-            self.k8s_scale_producers(producer_count)
+            self.k8s_scale_producers(self.desired_producer_count)
 
-            print(f"[SoakTestProcess] - Decrementing the producer count to {producer_count}")
+            print(f"[SoakTestProcess] - Decrementing the producer count to {self.desired_producer_count}")
         else:
             print("[SoakTestProcess] - Producer count is zero.")
 
@@ -39,13 +41,10 @@ class SoakTestProcess(ThroughputProcess):
         if self.threshold_exceeded[consumer_id] >= 3:
             print("[SoakTestProcess] - Threshold exceeded.")
 
-            num_producers = self.get_producer_count()
-
-            # decrement the producer count
-            self.decrement_producer_count()
-
-            # reset the thresholds
-            self.threshold_exceeded[consumer_id] = 0
+            actual_producer_count = self.get_producer_count()
+            if self.desired_producer_count == actual_producer_count:
+                # only decrement the producer count if we haven't already done so
+                self.decrement_producer_count()
 
         # we never want to quit due to tolerance events
         return False
@@ -78,8 +77,8 @@ class SoakTestProcess(ThroughputProcess):
         # start soak test once stability achieved
         num_brokers = self.configuration["number_of_brokers"]
         if num_producers > 0:
-            soak_test_ms = ((SOAK_TEST_S * num_brokers) / num_producers) * 1000
-            print(f"[SoakTestProcess] - Running soak test for {soak_test_ms/1000} seconds.")
+            soak_test_ms = ((SOAK_TEST_S * num_brokers) / num_producers)
+            print(f"[SoakTestProcess] - Running soak test for {soak_test_ms} seconds.")
         else:
             print("[SoakTestProcess] - No producers: aborting soak test...")
             self.stop()
@@ -102,7 +101,7 @@ class SoakTestProcess(ThroughputProcess):
             consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)][-5:])
 
             print(
-                f"[SoakTestProcess] - {run_time_ms:.2f}s of {soak_test_ms/1000:.2f}s Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                f"[SoakTestProcess] - {run_time_ms:.2f}s of {soak_test_ms:.2f}s Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
             # update the timings
             run_time_ms = time.time() - start_time_ms

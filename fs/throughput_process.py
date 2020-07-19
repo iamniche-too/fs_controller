@@ -16,17 +16,20 @@ class ThroughputProcess(BaseProcess):
         self.threshold_exceeded = {}
         # initialise empty dict with empty dict of lists
         self.consumer_throughput_dict = defaultdict(lambda: defaultdict(list))
-        self.previous_num_producers = 0
+        self.previous_producer_count = 0
 
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         raise NotImplementedError("Please use a sub-class to implement the method.")
 
-    def break_loop(self):
-        # default is not to break loop
-        return False
-
     def throughput_ok(self, consumer_id):
-        raise NotImplementedError("Please subclass and implement")
+        raise NotImplementedError("Please use a sub-class to implement the method.")
+
+    def reset_thresholds(self, consumer_id):
+        actual_producer_count = self.get_producer_count()
+        if self.previous_producer_count != actual_producer_count:
+            print("[ThroughputProcess] - producer change detected, resetting thresholds.")
+            self.threshold_exceeded[consumer_id] = 0
+        self.previous_producer_count = actual_producer_count
 
     def check_throughput(self, window_size=INITIAL_WINDOW_SIZE):
         data = self.get_data(self.consumer_throughput_queue)
@@ -37,7 +40,10 @@ class ThroughputProcess(BaseProcess):
         throughput = data["throughput"]
         num_producers = data["producer_count"]
 
-        actual_producer_count = self.get_producer_count()
+        # reset thresholds only if the producer count has changed
+        # i.e. if a new producer has just started
+        self.reset_thresholds(consumer_id)
+
         print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}, actual_producer_count {actual_producer_count}")
 
         # append throughput to specific list (as keyed by num_producers)

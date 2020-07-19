@@ -57,7 +57,7 @@ class StressTestProcess(ThroughputProcess):
         # if interval has elapsed, then start a new producer
         now = time.time()
         elapsed_time = now - self.last_producer_start_time
-        print("[StressTestProcess] - time since last increment {elapsed_time}")
+        print(f"[StressTestProcess] - time since last increment {elapsed_time}")
         if elapsed_time > self.configuration["producer_increment_interval_sec"]:
             self.start_new_producer(now)
 
