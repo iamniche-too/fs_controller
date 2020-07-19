@@ -3,7 +3,7 @@ import time
 import unittest
 import greenstalk
 
-from fs.controller import Controller, CheckConsumerThroughputProcess, SoakTestProcess
+from fs.controller import Controller, StressTestProcess, SoakTestProcess
 
 
 # IMPORTANT: Please set the directory to be the root directory NOT /tests/
@@ -137,6 +137,6 @@ class TestController(unittest.TestCase):
             "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5}
 
         # run as process
-        process = CheckConsumerThroughputProcess(configuration, self.queue)
+        process = StressTestProcess(configuration, self.queue)
         process.start()
         process.join()

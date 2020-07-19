@@ -68,9 +68,3 @@ class BaseProcess(StoppableProcess):
 
         return producer_count
 
-    def check_producer_count(self, desired_producer_count):
-        actual_producer_count = self.get_producer_count()
-        while not self.is_stopped() and actual_producer_count < desired_producer_count:
-            time.sleep(5)
-            actual_producer_count = self.get_producer_count()
-            print(f"[BaseProcess] - actual_producer_count={actual_producer_count}, desired_producer_count={desired_producer_count}")

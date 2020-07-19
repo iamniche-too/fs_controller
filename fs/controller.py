@@ -4,8 +4,7 @@ import greenstalk
 import requests
 import json
 import uuid
-from fs.check_consumer_throughput_process import CheckConsumerThroughputProcess
-from fs.producer_increment_process import ProducerIncrementProcess
+from fs.stress_test_process import StressTestProcess
 from fs.soak_test_process import SoakTestProcess
 from fs.utils import SCRIPT_DIR, PRODUCER_CONSUMER_NAMESPACE, KAFKA_NAMESPACE, KAFKA_DEPLOY_DIR, BURROW_DIR, \
     PRODUCERS_CONSUMERS_DEPLOY_DIR, K8S_SERVICE_COUNT, CLUSTER_NAME, CLUSTER_ZONE, TERRAFORM_DIR, SERVICE_ACCOUNT_EMAIL, \
@@ -19,8 +18,7 @@ class Controller:
 
     def __init__(self, queue):
         self.consumer_throughput_queue = queue
-        self.producer_increment_process = None
-        self.consumer_throughput_process = None
+        self.stress_test_process = None
         self.soak_test_process = None
 
         # template configuration
@@ -92,11 +90,8 @@ class Controller:
     def stop_threads(self):
         print("Stop threads called.")
 
-        if self.producer_increment_process:
-            self.producer_increment_process.stop()
-
-        if self.consumer_throughput_process:
-            self.consumer_throughput_process.stop()
+        if self.stress_test_process:
+            self.stress_test_process.stop()
 
         if self.soak_test_process:
             self.soak_test_process.stop()
@@ -347,23 +342,12 @@ class Controller:
 
     def run_stress_test(self, configuration, queue):
         print(f"\r\n[Controller] - 3. Running stress test.")
-        self.consumer_throughput_process = CheckConsumerThroughputProcess(configuration, queue)
-        self.producer_increment_process = ProducerIncrementProcess(configuration, queue)
 
-        self.consumer_throughput_process.start()
-        self.producer_increment_process.start()
+        self.stress_test_process = StressTestProcess(configuration, queue)
+        self.stress_test_process.start()
 
-        # join so that we wait for thread to finish
-        # i.e. on degradation event
-        self.consumer_throughput_process.join()
-
-        # degradation occurred, stop the producer increment thread
-        self.producer_increment_process.stop()
-
-        # wait for the producer increment process to exit
-        # worst case scenario is that it is already waiting to increment a producer...
-        print("Waiting for producer increment process to exit...")
-        time.sleep(configuration["producer_increment_interval_sec"])
+        # wait for thread to exit
+        self.stress_test_process.join()
 
         print(f"\r\n3. Stress test completed.")
 
