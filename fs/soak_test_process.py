@@ -31,7 +31,9 @@ class SoakTestProcess(ThroughputProcess):
             print("[SoakTestProcess] - Producer count is zero.")
 
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
-        super().throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
+        print(
+            f"[SoakTestProcess] - Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
+        self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
         # check for consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:
@@ -45,6 +47,7 @@ class SoakTestProcess(ThroughputProcess):
             # reset the thresholds
             self.threshold_exceeded[consumer_id] = 0
 
+        # we never want to quit due to tolerance events
         return False
 
     def throughput_ok(self, consumer_id):
@@ -99,11 +102,12 @@ class SoakTestProcess(ThroughputProcess):
             consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)][-5:])
 
             print(
-                f"[SoakTestProcess] - {run_time_ms/1000}s of {soak_test_ms/1000}s Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                f"[SoakTestProcess] - {run_time_ms:.2f}s of {soak_test_ms/1000:.2f}s Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
 
             # update the timings
             run_time_ms = time.time() - start_time_ms
             if run_time_ms > soak_test_ms:
+                print(f"[SoakTestProcess] - Soak test complete after {soak_test_ms / 1000} s.")
                 break
 
-        print(f"[SoakTestProcess] - Soak test complete after {soak_test_ms/1000} seconds.")
+        print(f"[SoakTestProcess] - ended.")

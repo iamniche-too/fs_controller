@@ -19,11 +19,7 @@ class ThroughputProcess(BaseProcess):
         self.previous_num_producers = 0
 
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
-        print(
-            f"[ThroughputProcess] - Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
-        self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
-
-        return False
+        raise NotImplementedError("Please use a sub-class to implement the method.")
 
     def break_loop(self):
         # default is not to break loop
@@ -42,8 +38,7 @@ class ThroughputProcess(BaseProcess):
         num_producers = data["producer_count"]
 
         actual_producer_count = self.get_producer_count()
-
-        print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, throughput_dict {self.consumer_throughput_dict[consumer_id]}, num_producers {num_producers}, actual_producer_count {actual_producer_count}")
+        print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}, actual_producer_count {actual_producer_count}")
 
         # append throughput to specific list (as keyed by num_producers)
         self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)

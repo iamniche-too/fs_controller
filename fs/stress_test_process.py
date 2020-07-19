@@ -20,23 +20,24 @@ class StressTestProcess(ThroughputProcess):
         self.desired_producer_count = self.initial_producer_count
         self.last_producer_start_time = 0
 
-    """
-    Check consumer throughput process
-    """
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         """
-        Throughput below tolerance
+        Check for throughput below tolerance
 
         :param consumer_id:
         :return:
         """
-        super().throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
+        print(
+            f"[StressTestProcess] - Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
+        self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
         # stop after 3 consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:
             print("[StressTestProcess] - Stopping after multiple throughput below tolerance...")
+            # we want to quit due to the tolerance event
             return False
 
+        # only quit if >= 3 tolerance events
         return True
 
     def start_new_producer(self, now):
@@ -55,7 +56,9 @@ class StressTestProcess(ThroughputProcess):
 
         # if interval has elapsed, then start a new producer
         now = time.time()
-        if (now - self.last_producer_start_time) > (self.configuration["producer_increment_interval_sec"]*1000):
+        elapsed_time = now - self.last_producer_start_time
+        print("[StressTestProcess] - time since last increment {elapsed_time}")
+        if elapsed_time > self.configuration["producer_increment_interval_sec"]:
             self.start_new_producer(now)
 
         return False
