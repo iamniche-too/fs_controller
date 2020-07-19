@@ -17,6 +17,7 @@ class ThroughputProcess(BaseProcess):
         # initialise empty dict with empty dict of lists
         self.consumer_throughput_dict = defaultdict(lambda: defaultdict(list))
         self.previous_producer_count = 0
+        self.throughput_count = 0
 
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         raise NotImplementedError("Please use a sub-class to implement the method.")
@@ -46,8 +47,13 @@ class ThroughputProcess(BaseProcess):
 
         print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}")
 
-        # append throughput to specific list (as keyed by num_producers)
-        self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+        # only append to list if it is not an initial value (avoids low throughput when starting up)
+        if self.throughput_count > 3:
+            # append throughput to specific list (as keyed by num_producers)
+            self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+        else
+            print("[ThroughputProcess] - Discarding initial throughput value...")
+            self.throughput_count += 1
 
         if not self.configuration["ignore_throughput_threshold"]:
             # detect threshold event if relevant to actual producer count

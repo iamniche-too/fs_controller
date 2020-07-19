@@ -19,7 +19,7 @@ class SoakTestProcess(ThroughputProcess):
 
     def decrement_producer_count(self):
         actual_producer_count = self.get_producer_count()
-        print(f"[SoakTestProcess] - Current producer count is {producer_count}")
+        print(f"[SoakTestProcess] - Current producer count is {actual_producer_count}")
 
         if actual_producer_count > 0:
             # decrement the producer count
@@ -78,7 +78,7 @@ class SoakTestProcess(ThroughputProcess):
         num_brokers = self.configuration["number_of_brokers"]
         if num_producers > 0:
             soak_test_ms = ((SOAK_TEST_S * num_brokers) / num_producers)
-            print(f"[SoakTestProcess] - Running soak test for {soak_test_ms} seconds.")
+            print(f"[SoakTestProcess] - Running soak test for {soak_test_ms:.2f} seconds.")
         else:
             print("[SoakTestProcess] - No producers: aborting soak test...")
             self.stop()
