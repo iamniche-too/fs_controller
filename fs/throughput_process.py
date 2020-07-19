@@ -9,7 +9,7 @@ INITIAL_WINDOW_SIZE = 10
 
 class ThroughputProcess(BaseProcess):
 
-    def __init__(self, configuration, queue):
+    def __init__(self, configuration, queue, discard_initial_values=True):
         super().__init__()
         self.configuration = configuration
         self.consumer_throughput_queue = queue
@@ -17,6 +17,9 @@ class ThroughputProcess(BaseProcess):
         # initialise empty dict with empty dict of lists
         self.consumer_throughput_dict = defaultdict(lambda: defaultdict(list))
         self.previous_producer_count = 0
+
+        # pertaining to discarding initial values (e.g. for stress test)
+        self.discard_initial_values = discard_initial_values
         self.throughput_count = 0
 
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
@@ -48,12 +51,16 @@ class ThroughputProcess(BaseProcess):
         print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}")
 
         # only append to list if it is not an initial value (avoids low throughput when starting up)
-        if self.throughput_count > 3:
+        if self.discard_initial_values:
+            if self.throughput_count > 3:
+                # append throughput to specific list (as keyed by num_producers)
+                self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+            else:
+                print("[ThroughputProcess] - Discarding initial throughput value...")
+                self.throughput_count += 1
+        else:
             # append throughput to specific list (as keyed by num_producers)
             self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
-        else:
-            print("[ThroughputProcess] - Discarding initial throughput value...")
-            self.throughput_count += 1
 
         if not self.configuration["ignore_throughput_threshold"]:
             # detect threshold event if relevant to actual producer count

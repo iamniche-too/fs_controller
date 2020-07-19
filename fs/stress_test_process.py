@@ -35,15 +35,14 @@ class StressTestProcess(ThroughputProcess):
         if self.threshold_exceeded[consumer_id] >= 3:
             print("[StressTestProcess] - Stopping after multiple throughput below tolerance...")
             # we want to quit due to the tolerance event
-            return False
+            return True
 
         # only quit if >= 3 tolerance events
-        return True
+        return False
 
-    def start_new_producer(self, now):
+    def start_new_producer(self, now, actual_producer_count):
         # store the time the new producer was started
         self.last_producer_start_time = now
-        actual_producer_count = self.get_producer_count()
         self.desired_producer_count = actual_producer_count + 1
         print(f"[StressTestProcess] - Starting producer, actual_producer_count {actual_producer_count}, desired_producer_count {self.desired_producer_count}")
         self.k8s_scale_producers(self.desired_producer_count)
@@ -58,8 +57,9 @@ class StressTestProcess(ThroughputProcess):
         now = time.time()
         elapsed_time = now - self.last_producer_start_time
         print(f"[StressTestProcess] - time since last increment {elapsed_time}")
-        if elapsed_time > self.configuration["producer_increment_interval_sec"]:
-            self.start_new_producer(now)
+        actual_producer_count = self.get_producer_count()
+        if elapsed_time > self.configuration["producer_increment_interval_sec"] and self.desired_producer_count != actual_producer_count:
+            self.start_new_producer(now, actual_producer_count)
 
         return False
 

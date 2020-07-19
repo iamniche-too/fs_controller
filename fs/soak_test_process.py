@@ -14,7 +14,9 @@ class SoakTestProcess(ThroughputProcess):
     Soak test process
     """
     def __init__(self, configuration, queue):
-        super().__init__(configuration, queue)
+        # for a soak test we assume the system is already running
+        # i.e. do not discard initial values
+        super().__init__(configuration, queue, discard_initial_values=False)
         self.desired_producer_count = 0
 
     def decrement_producer_count(self):
@@ -106,7 +108,7 @@ class SoakTestProcess(ThroughputProcess):
             # update the timings
             run_time_ms = time.time() - start_time_ms
             if run_time_ms > soak_test_ms:
-                print(f"[SoakTestProcess] - Soak test complete after {soak_test_ms / 1000} s.")
+                print(f"[SoakTestProcess] - Soak test complete after {soak_test_ms:.2f} s.")
                 break
 
         print(f"[SoakTestProcess] - ended.")
