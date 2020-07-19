@@ -93,8 +93,10 @@ class SoakTestProcess(ThroughputProcess):
 
             consumer_id = data["consumer_id"]
             throughput = data["throughput"]
-            self.consumer_throughput_dict[consumer_id].append(throughput)
-            consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][-5:])
+            num_producers = data["producer_count"]
+
+            self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+            consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)][-5:])
 
             print(
                 f"[SoakTestProcess] - {run_time_ms/1000}s of {soak_test_ms/1000}s Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")

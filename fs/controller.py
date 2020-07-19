@@ -352,7 +352,7 @@ class Controller:
         print(f"\r\n3. Stress test completed.")
 
     def run_soak_test(self, configuration, queue):
-        print(f"\r\n[Controller] - 3. Running soak test.")
+        print(f"\r\n[Controller] - 4. Running soak test.")
 
         self.soak_test_process = SoakTestProcess(configuration, queue)
 

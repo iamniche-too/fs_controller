@@ -64,7 +64,7 @@ class StressTestProcess(ThroughputProcess):
         print("[StressTestProcess] - started.")
 
         # store the time that the thread is started
-        self.last_producer_start_time = time.now()
+        self.last_producer_start_time = time.time()
 
         stop = False
         while not stop:
