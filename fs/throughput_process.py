@@ -27,7 +27,7 @@ class ThroughputProcess(BaseProcess):
     def reset_thresholds(self, consumer_id):
         actual_producer_count = self.get_producer_count()
         if self.previous_producer_count != actual_producer_count:
-            print("[ThroughputProcess] - producer change detected, resetting thresholds.")
+            print(f"[ThroughputProcess] - producer change detected: previous {self.previous_producer_count}, current {actual_producer_count} - resetting thresholds.")
             self.threshold_exceeded[consumer_id] = 0
         self.previous_producer_count = actual_producer_count
 
@@ -44,7 +44,7 @@ class ThroughputProcess(BaseProcess):
         # i.e. if a new producer has just started
         self.reset_thresholds(consumer_id)
 
-        print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}, actual_producer_count {actual_producer_count}")
+        print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}")
 
         # append throughput to specific list (as keyed by num_producers)
         self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
