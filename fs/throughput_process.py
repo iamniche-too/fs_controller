@@ -35,8 +35,7 @@ class ThroughputProcess(BaseProcess):
     def check_throughput(self, window_size=INITIAL_WINDOW_SIZE):
         data = self.get_data(self.consumer_throughput_queue)
         if data is None:
-            # read the next value
-            return
+            return False
 
         consumer_id = data["consumer_id"]
         throughput = data["throughput"]
@@ -50,7 +49,6 @@ class ThroughputProcess(BaseProcess):
         self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
 
         if not self.configuration["ignore_throughput_threshold"]:
-
             # detect threshold event if relevant to actual producer count
             if len(self.consumer_throughput_dict[consumer_id][str(num_producers)]) >= window_size:
                 # truncate list to last x entries
@@ -68,5 +66,5 @@ class ThroughputProcess(BaseProcess):
                 else:
                     return self.throughput_ok(consumer_id)
 
-        return True
+        return False
 
