@@ -20,10 +20,12 @@ class ProducerIncrementProcess(BaseProcess):
 
     def check_and_wait(self, desired_producer_count):
         # check the producer count is correct
-        self.check_producer_count(desired_producer_count)
+        if not self.is_stopped():
+            self.check_producer_count(desired_producer_count)
 
         # wait before we start another producer
-        self.wait_interval()
+        if not self.is_stopped():
+            self.wait_interval()
 
     def run(self):
         print("[ProducerIncrementProcess] - started.")

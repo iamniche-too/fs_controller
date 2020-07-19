@@ -42,28 +42,31 @@ class ThroughputProcess(BaseProcess):
         while not self.is_stopped():
             data = self.get_data(self.consumer_throughput_queue)
             if data is None:
-                time.sleep(.10)
+                # read the next value
                 continue
 
             consumer_id = data["consumer_id"]
             throughput = data["throughput"]
             num_producers = data["producer_count"]
 
-            # append throughput to specific list (as keyed by num_producers
-            self.consumer_throughput_dict[consumer_id][num_producers].append(throughput)
-
             actual_producer_count = self.get_producer_count()
 
-            if not self.configuration["ignore_throughput_threshold"] and num_producers == actual_producer_count:
+            print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, throughput_dict {self.consumer_throughput_dict[consumer_id]}, num_producers {num_producers}, actual_producer_count {actual_producer_count}")
+
+            # append throughput to specific list (as keyed by num_producers)
+            self.consumer_throughput_dict[consumer_id][num_producers].append(throughput)
+
+            if not self.configuration["ignore_throughput_threshold"]:
+
                 # detect threshold event if relevant to actual producer count
-                if len(self.consumer_throughput_dict[consumer_id][actual_producer_count]) >= window_size:
+                if len(self.consumer_throughput_dict[consumer_id][num_producers]) >= window_size:
                     # truncate list to last x entries
-                    self.consumer_throughput_dict[consumer_id][actual_producer_count] = self.consumer_throughput_dict[consumer_id][actual_producer_count][-window_size:]
+                    self.consumer_throughput_dict[consumer_id][num_producers] = self.consumer_throughput_dict[consumer_id][num_producers][-window_size:]
 
                     # calculate the mean
-                    consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][actual_producer_count])
+                    consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][num_producers])
                     print(
-                        f"[ThroughputProcess] - Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                        f"[ThroughputProcess] - Consumer {consumer_id}, throughput (average) = {consumer_throughput_average}, num_producers {num_producers}")
 
                     consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 
