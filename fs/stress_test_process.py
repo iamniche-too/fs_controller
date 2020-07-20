@@ -48,7 +48,15 @@ class StressTestProcess(ThroughputProcess):
         self.k8s_scale_producers(self.desired_producer_count)
 
     def throughput_ok(self, consumer_id, actual_producer_count):
-        super().throughput_ok(consumer_id, actual_producer_count)
+        # above threshold, reset the threshold events
+        # (as they must be consecutive to stop the thread)
+        self.log(
+            f"Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
+        self.threshold_exceeded[consumer_id] = 0
+
+        # if the desired count is different to the actual count then don't quit quite yet
+        if self.desired_producer_count != actual_producer_count:
+            return False
 
         # if interval has elapsed, then start a new producer
         now = time.time()

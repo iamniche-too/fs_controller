@@ -1,9 +1,17 @@
+from io import StringIO
+
 import greenstalk
 
 from fs.controller import Controller
 
 
 class PartitionCountController(Controller):
+
+    def __init__(self, queue):
+        super().__init__(queue)
+
+        # also log to file
+        self.external_logger = StringIO()
 
     def get_configuration_description(self):
         return "Testing partition counts"

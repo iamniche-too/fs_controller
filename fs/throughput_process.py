@@ -25,16 +25,6 @@ class ThroughputProcess(BaseProcess):
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         raise NotImplementedError("Please use a sub-class to implement the method.")
 
-    def throughput_ok(self, consumer_id, actual_producer_count):
-        # above threshold, reset the threshold events
-        # (as they must be consecutive to stop the thread)
-        self.log(f"Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
-        self.threshold_exceeded[consumer_id] = 0
-
-        # if the desired count is different to the actual count then don't quit quite yet
-        if self.desired_producer_count != actual_producer_count:
-            return False
-
     def reset_thresholds(self, consumer_id):
         actual_producer_count = self.get_producer_count()
         if self.previous_producer_count != actual_producer_count:

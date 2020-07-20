@@ -258,7 +258,7 @@ class Controller:
             self.log(f"Waiting for zks to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                self.log("Error: Time-out waiting for zks to start.")
+                self.log("Time-out waiting for zks to start.", level="ERROR")
                 return False
 
         self.log("ZKs started ok.")
@@ -279,7 +279,7 @@ class Controller:
             self.log(f"Waiting for brokers to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                self.log("Error: Time-out waiting for brokers to start.")
+                self.log("Time-out waiting for brokers to start.", level="ERROR")
                 return False
 
         self.log("Brokers started ok.")
@@ -359,7 +359,7 @@ class Controller:
         return True
 
     def run_stress_test(self, configuration, queue):
-        self.log(f"\r\n3. Running stress test.")
+        self.log(f"3. Running stress test.")
 
         self.stress_test_process = StressTestProcess(configuration, queue)
         self.stress_test_process.start()
@@ -367,10 +367,10 @@ class Controller:
         # wait for thread to exit
         self.stress_test_process.join()
 
-        self.log(f"\r\n3. Stress test completed.")
+        self.log(f"3. Stress test completed.")
 
     def run_soak_test(self, configuration, queue):
-        self.log(f"\r\n4. Running soak test.")
+        self.log(f"4. Running soak test.")
 
         self.soak_test_process = SoakTestProcess(configuration, queue)
 
@@ -380,10 +380,10 @@ class Controller:
         # wait for thread to exit
         self.soak_test_process.join()
 
-        self.log(f"\r\n3. Soak test completed.")
+        self.log(f"3. Soak test completed.")
 
     def run_configuration(self, configuration):
-        self.log(f"\r\n3. Running configuration: {configuration}")
+        self.log(f"3. Running configuration: {configuration}")
 
         # Configure producers with required number of initial producers and their message size
         # Note - number of producers may be greater than 0
@@ -435,7 +435,7 @@ class Controller:
         return configurations
 
     def provision_node_pool(self, configuration):
-        self.log(f"\r\n1. Provisioning node pool.")
+        self.log(f"1. Provisioning node pool.")
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], configuration["disk_type"], str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
@@ -452,7 +452,7 @@ class Controller:
         self.log("Node pool provisioned.")
 
     def unprovision_node_pool(self, configuration):
-        self.log(f"\r\n5. Unprovisioning node pool: {configuration}")
+        self.log(f"5. Unprovisioning node pool: {configuration}")
         filename = "./unprovision.sh"
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)

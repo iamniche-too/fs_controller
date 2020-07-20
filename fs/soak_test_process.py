@@ -53,7 +53,15 @@ class SoakTestProcess(ThroughputProcess):
         return False
 
     def throughput_ok(self, consumer_id, actual_producer_count):
-        super().throughput_ok(consumer_id, actual_producer_count)
+        # above threshold, reset the threshold events
+        # (as they must be consecutive to stop the thread)
+        self.log(
+            f"Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
+        self.threshold_exceeded[consumer_id] = 0
+
+        # if the desired count is different to the actual count then carry on
+        if self.desired_producer_count != actual_producer_count:
+            return False
 
         # Check each consumer to see if we are stable
         is_stable = True
