@@ -1,11 +1,10 @@
-import logging
-from io import StringIO
-
 import greenstalk
 
 from fs.controller import Controller
+from fs.utils import addlogger
 
 
+@addlogger
 class PartitionCountController(Controller):
 
     def get_configuration_description(self):
@@ -16,7 +15,7 @@ class PartitionCountController(Controller):
         Configurations pertaining to changing message size
         :return:
         """
-        logging.info("Loading partition count configurations.")
+        self.__log.info("Loading partition count configurations.")
 
         run_uid = self.get_run_uid()
 

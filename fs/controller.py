@@ -1,7 +1,4 @@
-import logging
-import os
 import subprocess
-import sys
 import time
 from datetime import datetime
 
@@ -13,15 +10,16 @@ from fs.stress_test_process import StressTestProcess
 from fs.soak_test_process import SoakTestProcess
 from fs.utils import SCRIPT_DIR, PRODUCER_CONSUMER_NAMESPACE, KAFKA_NAMESPACE, KAFKA_DEPLOY_DIR, BURROW_DIR, \
     PRODUCERS_CONSUMERS_DEPLOY_DIR, CLUSTER_NAME, CLUSTER_ZONE, TERRAFORM_DIR, SERVICE_ACCOUNT_EMAIL, \
-    ENDPOINT_URL
+    ENDPOINT_URL, addlogger
 
 stop_threads = False
 
 
+@addlogger
 class Controller:
     configurations = []
 
-    def __init__(self, queue, log_to_stdout=True):
+    def __init__(self, queue):
         self.consumer_throughput_queue = queue
         self.stress_test_process = None
         self.soak_test_process = None
@@ -38,27 +36,6 @@ class Controller:
 
         self.run_uid = self.get_run_uid()
 
-        # log directory
-        base_directory = os.path.dirname(os.path.abspath(__file__))
-        now = datetime.now()
-        path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        log_formatter = logging.Formatter("%(asctime)s [%(name)s] [%(levelname)-5.5s]  %(message)s")
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.INFO)
-
-        file_handler = logging.FileHandler("{0}/{1}.log".format(path, self.run_uid))
-        file_handler.setFormatter(log_formatter)
-        root_logger.addHandler(file_handler)
-
-        if log_to_stdout:
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(log_formatter)
-            root_logger.addHandler(console_handler)
-
     def post_json(self, endpoint_url, payload):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
@@ -69,7 +46,7 @@ class Controller:
         for configuration in self.configurations:
             configuration_as_dict = configuration[0]
 
-            logging.info(f"Next configuration: {configuration_as_dict}")
+            self.__log.info(f"Next configuration: {configuration_as_dict}")
 
             self.provision_node_pool(configuration_as_dict)
 
@@ -87,7 +64,7 @@ class Controller:
             stop_threads = False
 
     def k8s_delete_namespace(self, namespace):
-        logging.info(f"Deleting namespace: {namespace}")
+        self.__log.info(f"Deleting namespace: {namespace}")
         # run a script to delete a specific namespace
         filename = "./delete-namespace.sh"
         args = [filename, namespace]
@@ -95,10 +72,10 @@ class Controller:
 
     def flush_consumer_throughput_queue(self):
         # no flush() method exists in greenstalk so need to do it "brute force"
-        logging.info("Flushing consumer throughput queue")
+        self.__log.info("Flushing consumer throughput queue")
 
         stats = self.consumer_throughput_queue.stats_tube("consumer_throughput")
-        logging.info(stats)
+        self.__log.info(stats)
 
         done = False
         while not done:
@@ -113,10 +90,10 @@ class Controller:
             else:
                 self.consumer_throughput_queue.delete(job)
 
-        logging.info("Consumer throughput queue flushed.")
+        self.__log.info("Consumer throughput queue flushed.")
 
     def stop_threads(self):
-        logging.info("Stop threads called.")
+        self.__log.info("Stop threads called.")
 
         if self.stress_test_process:
             self.stress_test_process.stop()
@@ -125,7 +102,7 @@ class Controller:
             self.soak_test_process.stop()
 
     def teardown_configuration(self, configuration):
-        logging.info(f"4. Teardown configuration: {configuration}")
+        self.__log.info(f"4. Teardown configuration: {configuration}")
 
         # ensure threads are stopped
         self.stop_threads()
@@ -143,14 +120,14 @@ class Controller:
         if configuration["teardown_broker_nodes"]:
           self.unprovision_node_pool(configuration)
         else:
-          logging.info("Broker nodes left standing.")
+          self.__log.info("Broker nodes left standing.")
 
     def k8s_deploy_zk(self):
         """
         run a script to deploy ZK
         :return:
         """
-        logging.info(f"Deploying ZK...")
+        self.__log.info(f"Deploying ZK...")
 
         filename = "./deploy-zk.sh"
         args = [filename]
@@ -164,7 +141,7 @@ class Controller:
         :param replication_factor:
         :return:
         """
-        logging.info(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}...")
+        self.__log.info(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}...")
         filename = "./deploy-kafka.sh"
         args = [filename, str(num_partitions), str(replication_factor)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
@@ -181,42 +158,42 @@ class Controller:
 
     # run a script to deploy producers/consumers
     def k8s_deploy_burrow(self):
-        logging.info(f"Deploying Burrow...")
+        self.__log.info(f"Deploying Burrow...")
         filename = "./deploy.sh"
         args = [filename]
         self.bash_command_with_wait(args, BURROW_DIR)
 
         # wait for burrow external IP to be assigned
-        logging.info("Waiting for Burrow external IP...")
+        self.__log.info("Waiting for Burrow external IP...")
         burrow_ip = self.get_burrow_ip()
         while burrow_ip is None or burrow_ip == "":
             time.sleep(5)
             burrow_ip = self.get_burrow_ip()
 
-        logging.info(f"Burrow external IP: {burrow_ip}")
+        self.__log.info(f"Burrow external IP: {burrow_ip}")
 
     # run a script to deploy producers/consumers
     def k8s_deploy_producers_consumers(self):
-        logging.info(f"Deploying producers/consumers")
+        self.__log.info(f"Deploying producers/consumers")
         filename = "./deploy/gcp/deploy.sh"
         args = [filename]
         self.bash_command_with_wait(args, PRODUCERS_CONSUMERS_DEPLOY_DIR)
 
     def k8s_scale_brokers(self, broker_count):
-        logging.info(f"Scaling brokers, broker_count={broker_count}")
+        self.__log.info(f"Scaling brokers, broker_count={broker_count}")
         # run a script to start brokers
         filename = "./scale-brokers.sh"
         args = [filename, str(broker_count)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_configure_producers(self, start_producer_count, message_size):
-        logging.info(f"Configure producers, start_producer_count={start_producer_count}, message_size={message_size}")
+        self.__log.info(f"Configure producers, start_producer_count={start_producer_count}, message_size={message_size}")
         filename = "./configure-producers.sh"
         args = [filename, str(start_producer_count), str(message_size)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def k8s_scale_consumers(self, num_consumers):
-        logging.info(f"Configure consumers, num_consumers={num_consumers}")
+        self.__log.info(f"Configure consumers, num_consumers={num_consumers}")
         filename = "./scale-consumers.sh"
         args = [filename, str(num_consumers)]
         self.bash_command_with_wait(args, SCRIPT_DIR)
@@ -231,7 +208,7 @@ class Controller:
         except ValueError:
             pass
 
-        # logging.info(f"zk={zk_count}")
+        # self.__log.info(f"zk={zk_count}")
         return zk_count
 
     def get_broker_count(self):
@@ -244,7 +221,7 @@ class Controller:
         except ValueError:
             pass
 
-        # logging.info(f"broker_count={broker_count}")
+        # self.__log.info(f"broker_count={broker_count}")
         return broker_count
 
     def check_brokers(self, expected_broker_count):
@@ -265,13 +242,13 @@ class Controller:
             time.sleep(WAIT_INTERVAL)
 
             check_zks = self.check_zookeepers(num_zk)
-            logging.info(f"Waiting for zks to start...{i}/{attempts}")
+            self.__log.info(f"Waiting for zks to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                logging.info("Time-out waiting for zks to start.", level="ERROR")
+                self.__log.info("Time-out waiting for zks to start.", level="ERROR")
                 return False
 
-        logging.info("ZKs started ok.")
+        self.__log.info("ZKs started ok.")
         return True
 
     def check_brokers_ok(self, configuration):
@@ -286,24 +263,24 @@ class Controller:
             time.sleep(WAIT_INTERVAL)
 
             check_brokers = self.check_brokers(num_brokers)
-            logging.info(f"Waiting for brokers to start...{i}/{attempts}")
+            self.__log.info(f"Waiting for brokers to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                logging.info("Time-out waiting for brokers to start.", level="ERROR")
+                self.__log.info("Time-out waiting for brokers to start.", level="ERROR")
                 return False
 
-        logging.info("Brokers started ok.")
+        self.__log.info("Brokers started ok.")
         return True
 
     # run a script to configure gcloud
     def configure_gcloud(self, cluster_name, cluster_zone):
-        # logging.info(f"configure_gcloud, cluster_name={cluster_name}, cluster_zone={cluster_zone}")
+        # self.__log.info(f"configure_gcloud, cluster_name={cluster_name}, cluster_zone={cluster_zone}")
         filename = "./configure-gcloud.sh"
         args = [filename, cluster_name, cluster_zone]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def setup_configuration(self, configuration):
-        logging.info(f"2. Setup configuration: {configuration}")
+        self.__log.info(f"2. Setup configuration: {configuration}")
 
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
@@ -313,7 +290,7 @@ class Controller:
 
         all_ok = self.check_zk_ok(configuration)
         if not all_ok:
-            logging.info("Aborting configuration - ZK not ok.")
+            self.__log.info("Aborting configuration - ZK not ok.")
             return False
 
         # deploy kafka brokers
@@ -328,7 +305,7 @@ class Controller:
 
         all_ok = self.check_brokers_ok(configuration)
         if not all_ok:
-            logging.info("Aborting configuration - brokers not ok.")
+            self.__log.info("Aborting configuration - brokers not ok.")
             return False
 
         # deploy producers/consumers
@@ -350,7 +327,7 @@ class Controller:
 
     def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
-        # logging.info(args)
+        # self.__log.info(args)
         p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
         p.wait()
         out = p.communicate()[0].decode("UTF-8")
@@ -358,18 +335,18 @@ class Controller:
 
     def bash_command_with_wait(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
-        # logging.info(args)
+        # self.__log.info(args)
         try:
             subprocess.check_call(args, stderr=subprocess.STDOUT, cwd=working_directory)
         except subprocess.CalledProcessError as e:
             # There was an error - command exited with non-zero code
-            logging.info(f"{e.output}")
+            self.__log.info(f"{e.output}")
             return False
 
         return True
 
     def run_stress_test(self, configuration, queue):
-        logging.info(f"3. Running stress test.")
+        self.__log.info(f"3. Running stress test.")
 
         self.stress_test_process = StressTestProcess(configuration, queue)
         self.stress_test_process.start()
@@ -377,10 +354,10 @@ class Controller:
         # wait for thread to exit
         self.stress_test_process.join()
 
-        logging.info(f"3. Stress test completed.")
+        self.__log.info(f"3. Stress test completed.")
 
     def run_soak_test(self, configuration, queue):
-        logging.info(f"4. Running soak test.")
+        self.__log.info(f"4. Running soak test.")
 
         self.soak_test_process = SoakTestProcess(configuration, queue)
 
@@ -390,10 +367,10 @@ class Controller:
         # wait for thread to exit
         self.soak_test_process.join()
 
-        logging.info(f"3. Soak test completed.")
+        self.__log.info(f"3. Soak test completed.")
 
     def run_configuration(self, configuration):
-        logging.info(f"3. Running configuration: {configuration}")
+        self.__log.info(f"3. Running configuration: {configuration}")
 
         # Configure producers with required number of initial producers and their message size
         # Note - number of producers may be greater than 0
@@ -445,7 +422,7 @@ class Controller:
         return configurations
 
     def provision_node_pool(self, configuration):
-        logging.info(f"1. Provisioning node pool.")
+        self.__log.info(f"1. Provisioning node pool.")
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], configuration["disk_type"], str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
@@ -459,14 +436,14 @@ class Controller:
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
 
-        logging.info("Node pool provisioned.")
+        self.__log.info("Node pool provisioned.")
 
     def unprovision_node_pool(self, configuration):
-        logging.info(f"5. Unprovisioning node pool: {configuration}")
+        self.__log.info(f"5. Unprovisioning node pool: {configuration}")
         filename = "./unprovision.sh"
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
-        logging.info("Node pool unprovisioned.")
+        self.__log.info("Node pool unprovisioned.")
 
     def set_logger(self, logger):
         """

@@ -1,9 +1,10 @@
-import logging
 import greenstalk
 
 from fs.controller import Controller
+from fs.utils import addlogger
 
 
+@addlogger
 class DefaultController(Controller):
 
     def get_configuration_description(self):
@@ -15,7 +16,7 @@ class DefaultController(Controller):
 
         :return:
         """
-        logging.info("Loading default configurations.")
+        self.__log.info("Loading default configurations.")
 
         d = {"run_uid": self.run_uid}
         template = dict(self.configuration_template, **d)

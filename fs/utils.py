@@ -1,3 +1,5 @@
+import logging
+
 K8S_SERVICE_COUNT = 22
 
 PRODUCER_CONSUMER_NAMESPACE = "producer-consumer"
@@ -21,3 +23,9 @@ CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
 
 ENDPOINT_URL = "http://focussensors.duckdns.org:9000/consumer_reporting_endpoint"
+
+
+def addlogger(cls: type):
+    aname = '_{}__log'.format(cls.__name__)
+    setattr(cls, aname, logging.getLogger(cls.__module__ + '.' + cls.__name__))
+    return cls

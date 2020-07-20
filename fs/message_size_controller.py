@@ -1,10 +1,10 @@
-import logging
-from io import StringIO
 import greenstalk
 
 from fs.controller import Controller
+from fs.utils import addlogger
 
 
+@addlogger
 class MessageSizeController(Controller):
 
     def get_configuration_description(self):
@@ -16,7 +16,7 @@ class MessageSizeController(Controller):
 
         :return:
         """
-        logging.info("Loading message size configurations.")
+        self.__log.info("Loading message size configurations.")
         run_uid = self.get_run_uid()
 
         # override the message size
