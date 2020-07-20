@@ -72,7 +72,7 @@ class StressTestProcess(ThroughputProcess):
 
         stop = False
         while not stop:
-            stop = self.check_throughput()
+            stop = self.check_throughput(window_size=8)
 
         print("[StressTestProcess] - ended.")
 
