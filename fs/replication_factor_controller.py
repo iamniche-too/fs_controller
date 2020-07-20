@@ -15,17 +15,19 @@ class ReplicationFactorController(Controller):
         """
         print("Loading replication factor configurations.")
 
+        run_uid = self.get_run_uid()
+
         # override the replication factor
-        d = {"replication_factor": 1}
+        d = {"run_uid": run_uid, "replication_factor": 1}
         template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 
         # override the replication factor
-        d = {"replication_factor": 3}
+        d = {"run_uid": run_uid, "replication_factor": 3}
         template = dict(self.configuration_template, **d)
 
         # override the replication factor
-        d = {"replication_factor": 5}
+        d = {"run_uid": run_uid, "replication_factor": 5}
         template = dict(self.configuration_template, **d)
 
         self.configurations.append(self.get_configurations(template))

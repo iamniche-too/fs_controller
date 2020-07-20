@@ -15,19 +15,20 @@ class MessageSizeController(Controller):
         :return:
         """
         print("Loading message size configurations.")
+        run_uid = self.get_run_uid()
 
         # override the message size
-        d = {"message_size_kb": 75}
+        d = {"run_uid": run_uid, "message_size_kb": 75}
         template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 
         # override the message size
-        d = {"message_size_kb": 750}
+        d = {"run_uid": run_uid, "message_size_kb": 750}
         template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 
         # override the message size
-        d = {"message_size_kb": 7500}
+        d = {"run_uid": run_uid, "message_size_kb": 7500}
         template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 

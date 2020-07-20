@@ -377,8 +377,11 @@ class Controller:
         # run soak test
         self.run_soak_test(configuration, self.consumer_throughput_queue)
 
-    def get_configuration_uid(self):
+    def get_uid(self):
         return str(uuid.uuid4().hex.upper()[0:6])
+
+    def get_run_uid(self):
+        return "run_" + self.get_uid()
 
     def load_configurations(self):
         raise NotImplementedError("Please use a sub-class to implement actual configurations")
@@ -389,7 +392,7 @@ class Controller:
     def get_configurations(self, template):
         configurations = []
 
-        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
         configurations.append(dict(template, **d))
 
         # d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 9}
@@ -407,7 +410,7 @@ class Controller:
 
         # start_producer_count defaults to 1
         # Final configuration should bring down the nodes
-        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 6, "max_producer_count": 12,
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 6, "max_producer_count": 12,
              "teardown_broker_nodes": True}
         configurations.append(dict(template, **d))
 

@@ -16,8 +16,10 @@ class DefaultController(Controller):
         """
         print("Loading default configurations.")
 
-        # no overrides on the default template
-        self.configurations.append(self.get_configurations(self.configuration_template))
+        run_uid = self.get_run_uid()
+        d = {"run_uid": run_uid}
+        template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
