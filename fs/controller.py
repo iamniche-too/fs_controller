@@ -35,6 +35,29 @@ class Controller:
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
 
         self.run_uid = self.get_run_uid()
+        
+        self.configure_logging()
+
+    def configure_logging(self):
+        # log directory
+        base_directory = os.path.dirname(os.path.abspath(__file__))
+        now = datetime.now()
+        path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        log_formatter = logging.Formatter("%(asctime)s [%(name)s] [%(levelname)-5.5s]  %(message)s")
+        root_logger = logging.getLogger("fs")
+        root_logger.setLevel(logging.INFO)
+
+        file_handler = logging.FileHandler("{0}/{1}.log".format(path, self.run_uid))
+        file_handler.setFormatter(log_formatter)
+        root_logger.addHandler(file_handler)
+
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(log_formatter)
+        root_logger.addHandler(console_handler)
 
     def post_json(self, endpoint_url, payload):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
