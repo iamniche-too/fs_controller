@@ -43,6 +43,9 @@ class Controller:
         now = datetime.now()
         path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
 
+        if not os.path.exists(path):
+            os.makedirs(path)
+
         log_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
         root_logger = logging.getLogger()
 
