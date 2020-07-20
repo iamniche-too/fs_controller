@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 from datetime import datetime
@@ -41,6 +42,13 @@ class Controller:
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
 
+    def flush_log(self):
+        # write out to a file
+        base_directory = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(base_directory, "..", "log", self.run_uid + ".log")
+        with open(path, "w") as file:
+            file.write(self.external_logger.getvalue())
+
     def run(self):
         self.load_configurations()
 
@@ -59,6 +67,8 @@ class Controller:
 
             # now teardown and unprovision
             self.teardown_configuration(configuration_as_dict)
+
+            self.flush_log()
 
             # reset the stop threads flag
             global stop_threads
@@ -464,7 +474,8 @@ class Controller:
         msg = "{} {} {} {}".format(date_str, level.ljust(10), type(self).__name__, msg)
 
         if self.external_logger is not None:
-            self.external_logger.write(msg)
+            # include line break
+            self.external_logger.write(msg + "\n")
 
         if self.log_to_stdout:
             print(msg)

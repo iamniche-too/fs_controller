@@ -1,9 +1,18 @@
+from io import StringIO
 import greenstalk
 
 from fs.controller import Controller
 
 
 class DefaultController(Controller):
+
+    def __init__(self, queue):
+        super().__init__(queue)
+
+        self.run_uid = self.get_run_uid()
+
+        # also log to file
+        self.external_logger = StringIO()
 
     def get_configuration_description(self):
         return "Default test"
@@ -16,13 +25,12 @@ class DefaultController(Controller):
         """
         self.log("Loading default configurations.")
 
-        run_uid = self.get_run_uid()
-        d = {"run_uid": run_uid}
+        d = {"run_uid": self.run_uid}
         template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 
         # run same test twice...
-        d = {"run_uid": run_uid}
+        d = {"run_uid": self.run_uid}
         template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 

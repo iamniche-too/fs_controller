@@ -11,6 +11,8 @@ from fs.stoppable_process import StoppableProcess
 class BaseProcess(StoppableProcess):
 
     def __init__(self):
+        super().__init__()
+
         # logging
         self.log_to_stdout = True
         self.external_logger = None
