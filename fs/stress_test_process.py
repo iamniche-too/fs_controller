@@ -72,7 +72,13 @@ class StressTestProcess(ThroughputProcess):
 
         stop = False
         while not stop:
-            stop = self.check_throughput(window_size=8)
+            stop = self.check_throughput(window_size=5)
+
+        actual_producer_count = self.get_producer_count()
+        if self.desired_producer_count > actual_producer_count:
+            print("[StressTestProcess] - cancelling outstanding producer increment.")
+            # cancel the outstanding increment
+            self.k8s_scale_producers(actual_producer_count)
 
         print("[StressTestProcess] - ended.")
 
