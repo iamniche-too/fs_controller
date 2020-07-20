@@ -1,3 +1,4 @@
+import logging
 from io import StringIO
 import greenstalk
 
@@ -21,7 +22,7 @@ class DefaultController(Controller):
 
         :return:
         """
-        self.log("Loading default configurations.")
+        logging.info("Loading default configurations.")
 
         d = {"run_uid": self.run_uid}
         template = dict(self.configuration_template, **d)

@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 
 
@@ -10,7 +11,7 @@ class StoppableProcess(multiprocessing.Process):
         self._stop_event = multiprocessing.Event()
 
     def stop(self):
-        self.log("Stop called...")
+        logging.info("Stop called...")
         self._stop_event.set()
 
     def is_stopped(self):

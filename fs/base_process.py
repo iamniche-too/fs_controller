@@ -1,4 +1,5 @@
 import json
+import logging
 import subprocess
 from datetime import datetime
 
@@ -27,7 +28,7 @@ class BaseProcess(StoppableProcess):
             job = consumer_throughput_queue.reserve(timeout)
 
             if job is None:
-                # self.log("Nothing on consumer throughput queue...")
+                # logging.info("Nothing on consumer throughput queue...")
                 return None
 
             data = json.loads(job.body)
@@ -36,24 +37,24 @@ class BaseProcess(StoppableProcess):
             try:
                 consumer_throughput_queue.delete(job)
             except OSError as e:
-                self.log(f"Warning: unable to delete job {job}, {e}", e)
+                logging.warn(f"Warning: unable to delete job {job}, {e}", e)
 
         except greenstalk.TimedOutError:
             # mute for output sake
-            # self.log("Warning: nothing in consumer throughput queue.")
+            # logging.info("Warning: nothing in consumer throughput queue.")
             pass
         except greenstalk.UnknownResponseError:
-            self.log("Warning: unknown response from beanstalkd server.", level="WARNING")
+            logging.warning("Warning: unknown response from beanstalkd server.", level="WARNING")
         except greenstalk.DeadlineSoonError:
-            self.log("Warning: job timeout in next second.", level="WARNING")
+            logging.warning("Warning: job timeout in next second.", level="WARNING")
         except ConnectionError as ce:
-            self.log(f"Error: ConnectionError: {ce}", level="ERROR")
+            logging.error(f"Error: ConnectionError: {ce}", level="ERROR")
 
         return data
 
     def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
-        # self.log(args)
+        # logging.info(args)
         p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
         p.wait()
         out = p.communicate()[0].decode("UTF-8")
