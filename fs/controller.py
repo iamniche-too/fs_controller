@@ -69,7 +69,7 @@ class Controller:
         for configuration in self.configurations:
             configuration_as_dict = configuration[0]
 
-            logging.info(f"\r\nNext configuration: {configuration_as_dict}")
+            logging.info(f"Next configuration: {configuration_as_dict}")
 
             self.provision_node_pool(configuration_as_dict)
 
@@ -125,7 +125,7 @@ class Controller:
             self.soak_test_process.stop()
 
     def teardown_configuration(self, configuration):
-        logging.info(f"\r\n4. Teardown configuration: {configuration}")
+        logging.info(f"4. Teardown configuration: {configuration}")
 
         # ensure threads are stopped
         self.stop_threads()
@@ -303,7 +303,7 @@ class Controller:
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def setup_configuration(self, configuration):
-        logging.info(f"\r\n2. Setup configuration: {configuration}")
+        logging.info(f"2. Setup configuration: {configuration}")
 
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
