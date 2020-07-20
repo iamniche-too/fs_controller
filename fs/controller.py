@@ -35,7 +35,7 @@ class Controller:
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
 
         self.run_uid = self.get_run_uid()
-        
+
         self.configure_logging()
 
     def configure_logging(self):
