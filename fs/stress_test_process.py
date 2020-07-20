@@ -27,13 +27,13 @@ class StressTestProcess(ThroughputProcess):
         :param consumer_id:
         :return:
         """
-        print(
-            f"[StressTestProcess] - Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
+        self.log(
+            f"Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
         self.threshold_exceeded[consumer_id] = self.threshold_exceeded.get(consumer_id, 0) + 1
 
         # stop after 3 consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:
-            print("[StressTestProcess] - Stopping after multiple throughput below tolerance...")
+            self.log("Stopping after multiple throughput below tolerance...")
             # we want to quit due to the tolerance event
             return True
 
@@ -44,7 +44,7 @@ class StressTestProcess(ThroughputProcess):
         # store the time the new producer was started
         self.last_producer_start_time = now
         self.desired_producer_count = actual_producer_count + 1
-        print(f"[StressTestProcess] - Starting producer, actual_producer_count {actual_producer_count}, desired_producer_count {self.desired_producer_count}")
+        self.log(f"Starting producer, actual_producer_count {actual_producer_count}, desired_producer_count {self.desired_producer_count}")
         self.k8s_scale_producers(self.desired_producer_count)
 
     def throughput_ok(self, consumer_id, actual_producer_count):
@@ -54,7 +54,7 @@ class StressTestProcess(ThroughputProcess):
         now = time.time()
         elapsed_time = now - self.last_producer_start_time
         increment_time = self.configuration["producer_increment_interval_sec"]
-        # print(f"[StressTestProcess] - time since last increment {elapsed_time}, increment_time {increment_time}")
+        # self.log(f"time since last increment {elapsed_time}, increment_time {increment_time}")
         actual_producer_count = self.get_producer_count()
         if elapsed_time > increment_time:
             self.start_new_producer(now, actual_producer_count)
@@ -62,7 +62,7 @@ class StressTestProcess(ThroughputProcess):
         return False
 
     def run(self):
-        print("[StressTestProcess] - started.")
+        self.log("started.")
 
         # store the time that the thread is started
         self.last_producer_start_time = time.time()
@@ -73,9 +73,9 @@ class StressTestProcess(ThroughputProcess):
 
         actual_producer_count = self.get_producer_count()
         if self.desired_producer_count > actual_producer_count:
-            print("[StressTestProcess] - cancelling outstanding producer increment.")
+            self.log("cancelling outstanding producer increment.")
             # cancel the outstanding increment
             self.k8s_scale_producers(actual_producer_count)
 
-        print("[StressTestProcess] - ended.")
+        self.log("ended.")
 

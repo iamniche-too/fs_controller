@@ -28,7 +28,7 @@ class ThroughputProcess(BaseProcess):
     def throughput_ok(self, consumer_id, actual_producer_count):
         # above threshold, reset the threshold events
         # (as they must be consecutive to stop the thread)
-        print(f"[SoakTestProcess] - Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
+        self.log(f"Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
         self.threshold_exceeded[consumer_id] = 0
 
         # if the desired count is different to the actual count then don't quit quite yet
@@ -38,7 +38,7 @@ class ThroughputProcess(BaseProcess):
     def reset_thresholds(self, consumer_id):
         actual_producer_count = self.get_producer_count()
         if self.previous_producer_count != actual_producer_count:
-            print(f"[ThroughputProcess] - producer change detected: previous {self.previous_producer_count}, current {actual_producer_count} - resetting thresholds.")
+            self.log(f"Producer change detected: previous {self.previous_producer_count}, current {actual_producer_count} - resetting thresholds.")
             self.threshold_exceeded[consumer_id] = 0
         self.previous_producer_count = actual_producer_count
 
@@ -55,7 +55,7 @@ class ThroughputProcess(BaseProcess):
         # i.e. if a new producer has just started
         self.reset_thresholds(consumer_id)
 
-        print(f"[ThroughputProcess] - Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}")
+        self.log(f"Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}")
 
         # only append to list if it is not an initial value (avoids low throughput when starting up)
         if self.discard_initial_values:
@@ -63,7 +63,7 @@ class ThroughputProcess(BaseProcess):
                 # append throughput to specific list (as keyed by num_producers)
                 self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
             else:
-                print("[ThroughputProcess] - Discarding initial throughput value...")
+                self.log("Discarding initial throughput value...")
                 self.throughput_count += 1
         else:
             # append throughput to specific list (as keyed by num_producers)
@@ -77,8 +77,8 @@ class ThroughputProcess(BaseProcess):
 
                 # calculate the mean
                 consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)])
-                print(
-                    f"[ThroughputProcess] - Consumer {consumer_id}, throughput (average) = {consumer_throughput_average}, expected {num_producers}")
+                self.log(
+                    f"Consumer {consumer_id}, throughput (average) = {consumer_throughput_average}, expected {DEFAULT_THROUGHPUT_MB_S * num_producers}")
 
                 consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 

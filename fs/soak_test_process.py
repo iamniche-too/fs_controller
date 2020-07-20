@@ -43,7 +43,7 @@ class SoakTestProcess(ThroughputProcess):
         # check for consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:
             actual_producer_count = self.get_producer_count()
-            print(f"[SoakTestProcess] - Threshold exceeded, actual_producer_coun{actual_producer_count}, desired_producer_count {self.desired_producer_count}")
+            print(f"[SoakTestProcess] - Threshold exceeded, actual_producer_count {actual_producer_count}, desired_producer_count {self.desired_producer_count}")
 
             if self.desired_producer_count == actual_producer_count:
                 # only decrement the producer count if we haven't already done so

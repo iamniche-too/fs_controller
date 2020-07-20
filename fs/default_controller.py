@@ -14,7 +14,7 @@ class DefaultController(Controller):
 
         :return:
         """
-        print("Loading default configurations.")
+        self.log("Loading default configurations.")
 
         run_uid = self.get_run_uid()
         d = {"run_uid": run_uid}

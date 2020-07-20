@@ -1,6 +1,6 @@
 import json
 import subprocess
-import time
+from datetime import datetime
 
 import greenstalk
 
@@ -9,6 +9,12 @@ from fs.stoppable_process import StoppableProcess
 
 
 class BaseProcess(StoppableProcess):
+
+    def __init__(self):
+        # logging
+        self.log_to_stdout = True
+        self.external_logger = None
+
     """
     Base process
     """
@@ -19,7 +25,7 @@ class BaseProcess(StoppableProcess):
             job = consumer_throughput_queue.reserve(timeout)
 
             if job is None:
-                # print("Nothing on consumer throughput queue...")
+                # self.log("Nothing on consumer throughput queue...")
                 return None
 
             data = json.loads(job.body)
@@ -28,24 +34,24 @@ class BaseProcess(StoppableProcess):
             try:
                 consumer_throughput_queue.delete(job)
             except OSError as e:
-                print(f"Warning: unable to delete job {job}, {e}", e)
+                self.log(f"Warning: unable to delete job {job}, {e}", e)
 
         except greenstalk.TimedOutError:
             # mute for output sake
-            # print("[BaseProcess] - Warning: nothing in consumer throughput queue.")
+            # self.log("Warning: nothing in consumer throughput queue.")
             pass
         except greenstalk.UnknownResponseError:
-            print("[BaseProcess] - Warning: unknown response from beanstalkd server.")
+            self.log("Warning: unknown response from beanstalkd server.", level="WARNING")
         except greenstalk.DeadlineSoonError:
-            print("[BaseProcess] - Warning: job timeout in next second.")
+            self.log("Warning: job timeout in next second.", level="WARNING")
         except ConnectionError as ce:
-            print(f"[BaseProcess] - Error: ConnectionError: {ce}")
+            self.log(f"Error: ConnectionError: {ce}", level="ERROR")
 
         return data
 
     def bash_command_with_output(self, additional_args, working_directory):
         args = ['/bin/bash', '-e'] + additional_args
-        # print(args)
+        # self.log(args)
         p = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=working_directory)
         p.wait()
         out = p.communicate()[0].decode("UTF-8")
@@ -67,4 +73,27 @@ class BaseProcess(StoppableProcess):
             pass
 
         return producer_count
+
+    def set_logger(self, logger):
+        """
+        Also log to something with a :method:`write`.
+        e.g. StringIO
+        """
+        self.external_logger = logger
+
+    def log(self, msg, level="INFO"):
+        """
+        @param level: (str) DEBUG, PROGRESS, INFO, WARNING, ERROR or CRITICAL
+        """
+        if not (self.log_to_stdout or self.external_logger is not None):
+            return
+
+        date_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        msg = "{} {} [{}] {}".format(date_str, level.ljust(10), type(self).__name__, msg)
+
+        if self.external_logger is not None:
+            self.external_logger.write(msg)
+
+        if self.log_to_stdout:
+            print(msg)
 
