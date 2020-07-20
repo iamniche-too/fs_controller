@@ -46,7 +46,7 @@ class Controller:
         if not os.path.exists(path):
             os.makedirs(path)
 
-        log_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+        log_formatter = logging.Formatter("%(asctime)s [%(name)s] [%(levelname)-5.5s]  %(message)s")
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.INFO)
 
