@@ -21,7 +21,7 @@ stop_threads = False
 class Controller:
     configurations = []
 
-    def __init__(self, queue):
+    def __init__(self, queue, log_to_stdout=True):
         self.consumer_throughput_queue = queue
         self.stress_test_process = None
         self.soak_test_process = None
@@ -48,12 +48,13 @@ class Controller:
 
         log_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
         root_logger = logging.getLogger()
+        root_logger.setLevel(logging.INFO)
 
         file_handler = logging.FileHandler("{0}/{1}.log".format(path, self.run_uid + ".log"))
         file_handler.setFormatter(log_formatter)
         root_logger.addHandler(file_handler)
 
-        if self.log_to_stdout:
+        if log_to_stdout:
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(log_formatter)
             root_logger.addHandler(console_handler)
