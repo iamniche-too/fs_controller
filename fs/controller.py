@@ -34,6 +34,8 @@ class Controller:
         # default the number of partitions
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
 
+        self.run_uid = self.get_run_uid()
+
         # logging
         self.log_to_stdout = True
         self.external_logger = None

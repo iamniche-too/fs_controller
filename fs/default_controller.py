@@ -9,8 +9,6 @@ class DefaultController(Controller):
     def __init__(self, queue):
         super().__init__(queue)
 
-        self.run_uid = self.get_run_uid()
-
         # also log to file
         self.external_logger = StringIO()
 
