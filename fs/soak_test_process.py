@@ -1,5 +1,6 @@
 import time
 from statistics import mean
+from fs.utils import DEFAULT_THROUGHPUT_MB_S
 
 # A 21GB pagefile can cache:
 # 168Gb / (0.59 * p / n) == 285 * n / p seconds of data.
@@ -42,7 +43,7 @@ class SoakTestProcess(ThroughputProcess):
         # check for consecutive threshold events
         if self.threshold_exceeded[consumer_id] >= 3:
             actual_producer_count = self.get_producer_count()
-            print("[SoakTestProcess] - Threshold exceeded, actual_producer_coun{actual_producer_count}, desired_producer_count {self.desired_producer_count}")
+            print(f"[SoakTestProcess] - Threshold exceeded, actual_producer_coun{actual_producer_count}, desired_producer_count {self.desired_producer_count}")
 
             if self.desired_producer_count == actual_producer_count:
                 # only decrement the producer count if we haven't already done so
@@ -51,11 +52,8 @@ class SoakTestProcess(ThroughputProcess):
         # we never want to quit due to tolerance events
         return False
 
-    def throughput_ok(self, consumer_id):
-        # above threshold, reset the threshold events
-        # (as they must be consecutive to stop the thread)
-        print(f"[SoakTestProcess] - Consumer {consumer_id} average throughput ok.")
-        self.threshold_exceeded[consumer_id] = 0
+    def throughput_ok(self, consumer_id, actual_producer_count):
+        super().throughput_ok(consumer_id, actual_producer_count)
 
         # Check each consumer to see if we are stable
         is_stable = True
@@ -105,7 +103,7 @@ class SoakTestProcess(ThroughputProcess):
             consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)][-5:])
 
             print(
-                f"[SoakTestProcess] - {run_time_ms:.2f}s of {soak_test_ms:.2f}s Consumer {consumer_id} throughput (average) = {consumer_throughput_average}")
+                f"[SoakTestProcess] - {run_time_ms:.2f}s of {soak_test_ms:.2f}s Consumer {consumer_id} throughput (average) {consumer_throughput_average}, expected {DEFAULT_THROUGHPUT_MB_S * num_producers}")
 
             # update the timings
             run_time_ms = time.time() - start_time_ms

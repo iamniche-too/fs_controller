@@ -21,6 +21,11 @@ class DefaultController(Controller):
         template = dict(self.configuration_template, **d)
         self.configurations.append(self.get_configurations(template))
 
+        # run same test twice...
+        d = {"run_uid": run_uid}
+        template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
+
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':

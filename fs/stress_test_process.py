@@ -47,19 +47,16 @@ class StressTestProcess(ThroughputProcess):
         print(f"[StressTestProcess] - Starting producer, actual_producer_count {actual_producer_count}, desired_producer_count {self.desired_producer_count}")
         self.k8s_scale_producers(self.desired_producer_count)
 
-    def throughput_ok(self, consumer_id):
-        # above threshold, reset the threshold events
-        # (as they must be consecutive to stop the thread)
-        print(f"[StressTestProcess] - Consumer {consumer_id} average throughput ok.")
-        self.threshold_exceeded[consumer_id] = 0
+    def throughput_ok(self, consumer_id, actual_producer_count):
+        super().throughput_ok(consumer_id, actual_producer_count)
 
         # if interval has elapsed, then start a new producer
         now = time.time()
         elapsed_time = now - self.last_producer_start_time
         increment_time = self.configuration["producer_increment_interval_sec"]
-        print(f"[StressTestProcess] - time since last increment {elapsed_time}, increment_time {increment_time}")
+        # print(f"[StressTestProcess] - time since last increment {elapsed_time}, increment_time {increment_time}")
         actual_producer_count = self.get_producer_count()
-        if elapsed_time > increment_time and self.desired_producer_count == actual_producer_count:
+        if elapsed_time > increment_time:
             self.start_new_producer(now, actual_producer_count)
 
         return False

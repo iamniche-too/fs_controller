@@ -25,8 +25,15 @@ class ThroughputProcess(BaseProcess):
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         raise NotImplementedError("Please use a sub-class to implement the method.")
 
-    def throughput_ok(self, consumer_id):
-        raise NotImplementedError("Please use a sub-class to implement the method.")
+    def throughput_ok(self, consumer_id, actual_producer_count):
+        # above threshold, reset the threshold events
+        # (as they must be consecutive to stop the thread)
+        print(f"[SoakTestProcess] - Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
+        self.threshold_exceeded[consumer_id] = 0
+
+        # if the desired count is different to the actual count then don't quit quite yet
+        if self.desired_producer_count != actual_producer_count:
+            return False
 
     def reset_thresholds(self, consumer_id):
         actual_producer_count = self.get_producer_count()
@@ -71,14 +78,14 @@ class ThroughputProcess(BaseProcess):
                 # calculate the mean
                 consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)])
                 print(
-                    f"[ThroughputProcess] - Consumer {consumer_id}, throughput (average) = {consumer_throughput_average}, num_producers {num_producers}")
+                    f"[ThroughputProcess] - Consumer {consumer_id}, throughput (average) = {consumer_throughput_average}, expected {num_producers}")
 
                 consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 
                 if consumer_throughput_average < consumer_throughput_tolerance:
                     return self.throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
                 else:
-                    return self.throughput_ok(consumer_id)
+                    return self.throughput_ok(consumer_id, num_producers)
 
         return False
 
