@@ -50,7 +50,7 @@ class Controller:
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.INFO)
 
-        file_handler = logging.FileHandler("{0}/{1}.log".format(path, self.run_uid + ".log"))
+        file_handler = logging.FileHandler("{0}/{1}.log".format(path, self.run_uid))
         file_handler.setFormatter(log_formatter)
         root_logger.addHandler(file_handler)
 
