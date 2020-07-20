@@ -47,7 +47,8 @@ class Controller:
     def flush_log(self):
         # write out to a file
         base_directory = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(base_directory, "..", "log", self.run_uid + ".log")
+        now = datetime.now()
+        path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"), self.run_uid + ".log")
         with open(path, "w") as file:
             file.write(self.external_logger.getvalue())
 
