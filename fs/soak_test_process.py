@@ -20,6 +20,10 @@ class SoakTestProcess(ThroughputProcess):
         super().__init__(configuration, queue, discard_initial_values=False)
         self.desired_producer_count = 0
 
+        self.min_throughput = 99999
+        self.max_throughput = 0
+        self.consumer_throughput_averages = []
+
     def decrement_producer_count(self):
         actual_producer_count = self.get_producer_count()
         self.__log.info(f"Current producer count is {actual_producer_count}")
@@ -110,6 +114,14 @@ class SoakTestProcess(ThroughputProcess):
             self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
             consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)][-5:])
 
+            self.consumer_throughput_averages.append(consumer_throughput_average)
+
+            if consumer_throughput_average < self.min_throughput:
+                self.min_throughput = consumer_throughput_average
+
+            if consumer_throughput_average > self.max_throughput:
+                self.max_throughput = consumer_throughput_average
+
             self.__log.info(
                 f"{run_time_ms:.2f}s of {soak_test_ms:.2f}s Consumer {consumer_id} throughput (average) {consumer_throughput_average}, expected {DEFAULT_THROUGHPUT_MB_S * num_producers}")
 
@@ -118,5 +130,8 @@ class SoakTestProcess(ThroughputProcess):
             if run_time_ms > soak_test_ms:
                 self.__log.info(f"Soak test complete after {soak_test_ms:.2f} s.")
                 break
+
+        average_throughput = mean(self.consumer_throughput_averages)
+        self.__log.info(f"Soak test stats: min_throughput {self.min_throughput}, max_throughput {self.max_throughput}, average_throughput {average_throughput}")
 
         self.__log.info(f"ended.")
