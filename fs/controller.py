@@ -54,7 +54,10 @@ class Controller:
         root_logger = logging.getLogger("fs")
         root_logger.setLevel(logging.INFO)
 
-        file_handler = logging.FileHandler("{0}/{1}.log".format(path, self.run_uid))
+        log_file = "{0}/{1}.log".format(path, self.run_uid)
+        print(f"Logging to file {log_file}")
+
+        file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(log_formatter)
         root_logger.addHandler(file_handler)
 
@@ -284,7 +287,7 @@ class Controller:
         # allow 30s per broker
         WAIT_INTERVAL = 10
         num_brokers = configuration["number_of_brokers"]
-        attempts = (45 * num_brokers) / WAIT_INTERVAL
+        attempts = (90 * num_brokers) / WAIT_INTERVAL
 
         check_brokers = self.check_brokers(num_brokers)
         i = 1
