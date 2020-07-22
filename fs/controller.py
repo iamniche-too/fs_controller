@@ -425,17 +425,17 @@ class Controller:
         d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
         configurations.append(dict(template, **d))
 
-        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
         configurations.append(dict(template, **d))
 
-        d = {"configuration_uid": self.self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7}
+        d = {"configuration_uid": self.self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7}
         configurations.append(dict(template, **d))
 
-        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
         configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
-        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
         configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
