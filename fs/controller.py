@@ -69,7 +69,7 @@ class Controller:
     def run(self):
         self.load_configurations()
 
-        self.__log(f"Loaded {len(self.configurations)} configurations.")
+        self.__log.info(f"Loaded {len(self.configurations)} configurations.")
 
         i = 1
         for configuration in self.configurations:
