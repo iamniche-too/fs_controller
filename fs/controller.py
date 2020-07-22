@@ -271,7 +271,7 @@ class Controller:
             self.__log.info(f"Waiting for zks to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                self.__log.info("Time-out waiting for zks to start.", level="ERROR")
+                self.__log.error("Time-out waiting for zks to start.")
                 return False
 
         self.__log.info("ZKs started ok.")
@@ -292,7 +292,7 @@ class Controller:
             self.__log.info(f"Waiting for brokers to start...{i}/{attempts}")
             i += 1
             if i > attempts:
-                self.__log.info("Time-out waiting for brokers to start.", level="ERROR")
+                self.__log.error("Time-out waiting for brokers to start.")
                 return False
 
         self.__log.info("Brokers started ok.")

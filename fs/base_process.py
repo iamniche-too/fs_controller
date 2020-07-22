@@ -1,7 +1,5 @@
 import json
-import logging
 import subprocess
-
 import greenstalk
 
 from fs.utils import SCRIPT_DIR, addlogger
@@ -10,13 +8,6 @@ from fs.stoppable_process import StoppableProcess
 
 @addlogger
 class BaseProcess(StoppableProcess):
-
-    def __init__(self):
-        super().__init__()
-
-        # logging
-        self.log_to_stdout = True
-        self.external_logger = None
 
     """
     Base process
@@ -37,18 +28,18 @@ class BaseProcess(StoppableProcess):
             try:
                 consumer_throughput_queue.delete(job)
             except OSError as e:
-                logging.warn(f"Warning: unable to delete job {job}, {e}", e)
+                self.__log.warning(f"Warning: unable to delete job {job}, {e}", e)
 
         except greenstalk.TimedOutError:
             # mute for output sake
             # self.__log("Warning: nothing in consumer throughput queue.")
             pass
         except greenstalk.UnknownResponseError:
-            self.__log.warning("Warning: unknown response from beanstalkd server.", level="WARNING")
+            self.__log.warning("Warning: unknown response from beanstalkd server.")
         except greenstalk.DeadlineSoonError:
-            self.__log.warning("Warning: job timeout in next second.", level="WARNING")
+            self.__log.warning("Warning: job timeout in next second.")
         except ConnectionError as ce:
-            self.__log.error(f"Error: ConnectionError: {ce}", level="ERROR")
+            self.__log.error(f"Error: ConnectionError: {ce}")
 
         return data
 
