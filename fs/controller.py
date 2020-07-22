@@ -69,6 +69,8 @@ class Controller:
     def run(self):
         self.load_configurations()
 
+        self.__log(f"Loaded {len(self.configurations)} configurations.")
+
         for configuration in self.configurations:
             configuration_as_dict = configuration[0]
 

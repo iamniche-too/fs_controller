@@ -12,10 +12,10 @@ class PartitionCountController(Controller):
 
     def load_configurations(self):
         """
-        Configurations pertaining to changing message size
+        Configurations pertaining to changing partition count
         :return:
         """
-        self.__log.info("Loading partition count configurations.")
+        self.__log.info("Loading partition count configurations...")
 
         run_uid = self.get_run_uid()
 

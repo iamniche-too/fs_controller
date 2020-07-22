@@ -12,7 +12,7 @@ class ReplicationFactorController(Controller):
 
     def load_configurations(self):
         """
-        Configurations pertaining to changing message size
+        Configurations pertaining to changing replication factor
         :return:
         """
         self.__log.info("Loading replication factor configurations.")
@@ -27,11 +27,11 @@ class ReplicationFactorController(Controller):
         # override the replication factor
         d = {"run_uid": run_uid, "replication_factor": 3}
         template = dict(self.configuration_template, **d)
+        self.configurations.append(self.get_configurations(template))
 
         # override the replication factor
         d = {"run_uid": run_uid, "replication_factor": 5}
         template = dict(self.configuration_template, **d)
-
         self.configurations.append(self.get_configurations(template))
 
 
