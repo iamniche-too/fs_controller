@@ -1,3 +1,5 @@
 export PYTHONPATH=`pwd`
 source ./scripts/export-gcp-credentials.sh
-python run.py
+
+# pass in the argument too
+python run.py $1
