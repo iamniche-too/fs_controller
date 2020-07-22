@@ -365,7 +365,7 @@ class Controller:
             subprocess.check_call(args, stderr=subprocess.STDOUT, cwd=working_directory)
         except subprocess.CalledProcessError as e:
             # There was an error - command exited with non-zero code
-            self.__log.info(f"{e.output}")
+            self.__log.error(f"{e.output}")
             return False
 
         return True
@@ -425,18 +425,18 @@ class Controller:
         d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
         configurations.append(dict(template, **d))
 
-        # d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 9}
-        # configurations.append(dict(template, **d))
+        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
+        configurations.append(dict(template, **d))
 
-        # d = {"configuration_uid": self.self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 9}
-        # configurations.append(dict(template, **d))
+        d = {"configuration_uid": self.self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7}
+        configurations.append(dict(template, **d))
 
-        # d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
-        # configurations.append(dict(template, **d))
+        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
+        configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
-        # d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
-        # configurations.append(dict(template, **d))
+        d = {"configuration_uid": self.get_configuration_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
+        configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
         # Final configuration should bring down the nodes
@@ -447,7 +447,7 @@ class Controller:
         return configurations
 
     def provision_node_pool(self, configuration):
-        self.__log.info(f"1. Provisioning node pool.")
+        self.__log.info("1. Provisioning node pool.")
 
         filename = "./generate-kafka-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], configuration["disk_type"], str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
