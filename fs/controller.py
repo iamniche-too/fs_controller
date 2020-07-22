@@ -428,7 +428,7 @@ class Controller:
         d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
         configurations.append(dict(template, **d))
 
-        d = {"configuration_uid": self.self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7}
         configurations.append(dict(template, **d))
 
         d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
