@@ -418,7 +418,10 @@ class Controller:
         return str(uuid.uuid4().hex.upper()[0:6])
 
     def get_run_uid(self):
-        return "run_" + self.get_uid()
+        if self.run_uid is None:
+            self.run_uid = "run_" + self.get_uid()
+
+        return self.run_uid
 
     def load_configurations(self):
         raise NotImplementedError("Please use a sub-class to implement actual configurations")
