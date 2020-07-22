@@ -71,10 +71,11 @@ class Controller:
 
         self.__log(f"Loaded {len(self.configurations)} configurations.")
 
+        i = 1
         for configuration in self.configurations:
             configuration_as_dict = configuration[0]
 
-            self.__log.info(f"Next configuration: {configuration_as_dict}")
+            self.__log.info(f"Configuration {i} of {len(self.configurations)}: {configuration_as_dict}")
 
             self.provision_node_pool(configuration_as_dict)
 
@@ -90,6 +91,8 @@ class Controller:
             # reset the stop threads flag
             global stop_threads
             stop_threads = False
+
+            i += 1
 
     def k8s_delete_namespace(self, namespace):
         self.__log.info(f"Deleting namespace: {namespace}")
