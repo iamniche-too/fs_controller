@@ -19,9 +19,10 @@ stop_threads = False
 
 @addlogger
 class Controller:
-    configurations = []
 
     def __init__(self, queue):
+        self.configurations = []
+
         self.consumer_throughput_queue = queue
         self.stress_test_process = None
         self.soak_test_process = None
@@ -342,8 +343,8 @@ class Controller:
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
-        # wait for consumers to start
-        time.sleep(5)
+        # wait 5s for each consumer to start
+        time.sleep(5*configuration["num_consumers"])
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
@@ -470,27 +471,4 @@ class Controller:
         self.bash_command_with_wait(args, TERRAFORM_DIR)
         self.__log.info("Node pool unprovisioned.")
 
-    def set_logger(self, logger):
-        """
-        Also log to something with a :method:`write`.
-        e.g. StringIO
-        """
-        self.external_logger = logger
-
-    def log(self, msg, level="INFO"):
-        """
-        @param level: (str) DEBUG, PROGRESS, INFO, WARNING, ERROR or CRITICAL
-        """
-        if not (self.log_to_stdout or self.external_logger is not None):
-            return
-
-        date_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-        msg = "{} {} {} {}".format(date_str, level.ljust(10), type(self).__name__, msg)
-
-        if self.external_logger is not None:
-            # include line break
-            self.external_logger.write(msg + "\n")
-
-        if self.log_to_stdout:
-            print(msg)
 
