@@ -73,20 +73,18 @@ class Controller:
 
         i = 1
         for configuration in self.configurations:
-            configuration_as_dict = configuration[0]
+            self.__log.info(f"Configuration {i} of {len(self.configurations)}: {configuration}")
 
-            self.__log.info(f"Configuration {i} of {len(self.configurations)}: {configuration_as_dict}")
-
-            self.provision_node_pool(configuration_as_dict)
+            self.provision_node_pool(configuration)
 
             # only run if everything is ok
-            if self.setup_configuration(configuration_as_dict):
+            if self.setup_configuration(configuration):
                 # wait for input to run configuration
                 # input("Setup complete. Press any key to run the configuration...")
-                self.run_configuration(configuration_as_dict)
+                self.run_configuration(configuration)
 
             # now teardown and unprovision
-            self.teardown_configuration(configuration_as_dict)
+            self.teardown_configuration(configuration)
 
             # reset the stop threads flag
             global stop_threads
