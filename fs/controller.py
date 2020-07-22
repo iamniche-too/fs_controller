@@ -36,8 +36,8 @@ class Controller:
 
         # default the number of partitions
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
-        
-        self.run_uid = None
+
+        self.run_uid = "run_" + self.get_uid()
         self.configure_logging()
 
     def configure_logging(self):
@@ -415,12 +415,6 @@ class Controller:
 
     def get_uid(self):
         return str(uuid.uuid4().hex.upper()[0:6])
-
-    def get_run_uid(self):
-        if self.run_uid is None:
-            self.run_uid = "run_" + self.get_uid()
-
-        return self.run_uid
 
     def load_configurations(self):
         raise NotImplementedError("Please use a sub-class to implement actual configurations")
