@@ -22,17 +22,17 @@ class ReplicationFactorController(Controller):
         # override the replication factor
         d = {"run_uid": run_uid, "replication_factor": 1}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
         # override the replication factor
         d = {"run_uid": run_uid, "replication_factor": 3}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
         # override the replication factor
         d = {"run_uid": run_uid, "replication_factor": 5}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json

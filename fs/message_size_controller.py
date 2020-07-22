@@ -22,17 +22,17 @@ class MessageSizeController(Controller):
         # override the message size
         d = {"run_uid": run_uid, "message_size_kb": 75}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
         # override the message size
         d = {"run_uid": run_uid, "message_size_kb": 750}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
         # override the message size
         d = {"run_uid": run_uid, "message_size_kb": 7500}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json

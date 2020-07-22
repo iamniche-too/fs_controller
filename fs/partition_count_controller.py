@@ -22,17 +22,17 @@ class PartitionCountController(Controller):
         # override the partition count
         d = {"run_uid": run_uid, "number_of_partitions": 5}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
         # override the partition count
         d = {"run_uid": run_uid, "number_of_partitions": 15}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
         # override the partition count
         d = {"run_uid": run_uid, "number_of_partitions": 30}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
