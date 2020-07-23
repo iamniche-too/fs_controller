@@ -314,8 +314,6 @@ class Controller:
     def setup_configuration(self, configuration):
         self.__log.info(f"2. Setup configuration: {configuration}")
 
-        self.write_metrics(configuration, "STRESS_MAX_PRODUCERS,STRESS MAX_GBPS,SOAK_NUM_PRODUCERS,SOAK_MIN_MBS,SOAK_MAX_MBS,SOAK_AVERAGE_MBS")
-
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
