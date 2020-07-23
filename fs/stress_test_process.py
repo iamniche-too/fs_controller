@@ -1,6 +1,6 @@
 import time
 from fs.throughput_process import ThroughputProcess
-from fs.utils import DEFAULT_THROUGHPUT_MB_S, addlogger
+from fs.utils import DEFAULT_THROUGHPUT_MB_S, addlogger, SEVENTY_FIVE_MBPS_IN_GBPS
 
 
 @addlogger
@@ -16,6 +16,7 @@ class StressTestProcess(ThroughputProcess):
         self.initial_producer_count = self.configuration["start_producer_count"]
         self.desired_producer_count = self.initial_producer_count
         self.last_producer_start_time = 0
+        self.stress_test_max_producers = 0
 
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         """
@@ -81,6 +82,10 @@ class StressTestProcess(ThroughputProcess):
             self.__log.info("cancelling outstanding producer increment.")
             # cancel the outstanding increment
             self.k8s_scale_producers(actual_producer_count)
+
+        # write out the key metrics
+        throughput_gbps = actual_producer_count * SEVENTY_FIVE_MBPS_IN_GBPS
+        self.write_metrics(self.configuration, "STRESS_MAX_PRODUCERS,STRESS_MAX_GBPS={0} {1}".format(str(actual_producer_count), str(throughput_gbps)))
 
         self.__log.info("ended.")
 

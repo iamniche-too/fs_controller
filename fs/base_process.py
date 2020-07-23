@@ -1,5 +1,8 @@
 import json
+import os
 import subprocess
+from datetime import datetime
+
 import greenstalk
 
 from fs.utils import SCRIPT_DIR, addlogger
@@ -8,6 +11,18 @@ from fs.stoppable_process import StoppableProcess
 
 @addlogger
 class BaseProcess(StoppableProcess):
+
+    def __init__(self, *args, **kwargs):
+        super().__init()
+        base_directory = os.path.dirname(os.path.abspath(__file__))
+        now = datetime.now()
+        self.base_path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
+
+    def write_metrics(self, configuration, data):
+        metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
+        metrics_file = os.path.join(self.base_path, metrics_filename)
+        with open(metrics_file, 'a') as outfile:
+            outfile.write(data + "\n")
 
     """
     Base process

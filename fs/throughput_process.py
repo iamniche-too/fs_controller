@@ -23,6 +23,10 @@ class ThroughputProcess(BaseProcess):
         self.discard_initial_values = discard_initial_values
         self.throughput_count = 0
 
+        # min/max
+        self.min_throughput = 99999
+        self.max_throughput = 0
+
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         raise NotImplementedError("Please use a sub-class to implement the method.")
 
@@ -53,6 +57,13 @@ class ThroughputProcess(BaseProcess):
             if self.throughput_count > 3:
                 # append throughput to specific list (as keyed by num_producers)
                 self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+
+                # update min/max, etc.
+                if throughput < self.min_throughput:
+                    self.min_throughput = throughput
+
+                if throughput > self.max_throughput:
+                    self.max_throughput = throughput
             else:
                 self.__log.info("Discarding initial throughput value...")
                 self.throughput_count += 1

@@ -16,6 +16,7 @@ BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.90
 DEFAULT_THROUGHPUT_MB_S = 75
+SEVENTY_FIVE_MBPS_IN_GBPS = 0.6
 
 SERVICE_ACCOUNT_EMAIL = "cluster-minimal-13893c372038@kafka-k8s-trial.iam.gserviceaccount.com"
 

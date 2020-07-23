@@ -38,22 +38,23 @@ class Controller:
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
 
         self.run_uid = "run_" + self.get_uid()
+        self.base_path = None
         self.configure_logging()
 
     def configure_logging(self):
         # log directory
         base_directory = os.path.dirname(os.path.abspath(__file__))
         now = datetime.now()
-        path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
+        self.base_path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
 
-        if not os.path.exists(path):
-            os.makedirs(path)
+        if not os.path.exists(self.base_path):
+            os.makedirs(self.base_path)
 
         log_formatter = logging.Formatter("%(asctime)s [%(name)s] [%(levelname)-5.5s]  %(message)s")
         root_logger = logging.getLogger("fs")
         root_logger.setLevel(logging.INFO)
 
-        log_file = "{0}/{1}.log".format(path, self.run_uid)
+        log_file = "{0}/{1}.log".format(self.base_path, self.run_uid)
         print(f"Logging to file {log_file}")
 
         file_handler = logging.FileHandler(log_file)
@@ -312,6 +313,8 @@ class Controller:
 
     def setup_configuration(self, configuration):
         self.__log.info(f"2. Setup configuration: {configuration}")
+
+        self.write_metrics(configuration, "STRESS_MAX_PRODUCERS,STRESS MAX_GBPS,SOAK_NUM_PRODUCERS,SOAK_MIN_MBS,SOAK_MAX_MBS,SOAK_AVERAGE_MBS")
 
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)

@@ -1,6 +1,6 @@
 import time
 from statistics import mean
-from fs.utils import DEFAULT_THROUGHPUT_MB_S, addlogger
+from fs.utils import DEFAULT_THROUGHPUT_MB_S, addlogger, SEVENTY_FIVE_MBPS_IN_GBPS
 
 # A 21GB pagefile can cache:
 # 168Gb / (0.59 * p / n) == 285 * n / p seconds of data.
@@ -20,8 +20,6 @@ class SoakTestProcess(ThroughputProcess):
         super().__init__(configuration, queue, discard_initial_values=False)
         self.desired_producer_count = 0
 
-        self.min_throughput = 99999
-        self.max_throughput = 0
         self.consumer_throughput_averages = []
 
     def decrement_producer_count(self):
@@ -98,6 +96,10 @@ class SoakTestProcess(ThroughputProcess):
             self.stop()
             return
 
+        # reset min/max, as we are not interested in the values before this point
+        self.min_throughput = 99999
+        self.max_throughput = 0
+
         start_time_ms = time.time()
         run_time_ms = 0
         while not self.is_stopped():
@@ -133,5 +135,8 @@ class SoakTestProcess(ThroughputProcess):
 
         average_throughput = mean(self.consumer_throughput_averages)
         self.__log.info(f"Soak test stats: min_throughput {self.min_throughput}, max_throughput {self.max_throughput}, average_throughput {average_throughput}")
+
+        # write out the key metrics
+        self.write_metrics(self.configuration, "SOAK_NUM_PRODUCERS,SOAK_THROUGHPUT_GBPS,SOAK_MIN_THROUGHPUT_GBPS,SOAK_MAX_THROUGHPUT_GBPS,SOAK_AVERAGE_THROUGHPUT_GBPS={0},{1},{2},{3},{4}".format(str(num_producers), str(num_producers*SEVENTY_FIVE_MBPS_IN_GBPS), str(self.min_throughput*8/1000), str(self.max_throughput*8/1000), str(average_throughput*8/1000)))
 
         self.__log.info(f"ended.")
