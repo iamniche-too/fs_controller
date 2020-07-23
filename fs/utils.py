@@ -9,10 +9,10 @@ TERRAFORM_DIR = "./terraform/"
 
 # set this to where-ever fs-kafka-k8s is cloned
 # KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
-KAFKA_DEPLOY_DIR = "/log/open-platform-checkouts/fs-kafka-k8s"
+KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
 # PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
-PRODUCERS_CONSUMERS_DEPLOY_DIR = "/log/open-platform-checkouts/fs-producer-consumer-k8s"
-BURROW_DIR = "/log/open-platform-checkouts/fs-burrow-k8s"
+PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
+BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.90
 DEFAULT_THROUGHPUT_MB_S = 75
