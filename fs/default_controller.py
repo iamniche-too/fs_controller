@@ -20,7 +20,7 @@ class DefaultController(Controller):
 
         d = {"run_uid": self.run_uid}
         template = dict(self.configuration_template, **d)
-        self.configurations.append(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template))
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
