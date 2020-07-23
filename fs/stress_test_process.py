@@ -10,8 +10,8 @@ class StressTestProcess(ThroughputProcess):
     a) Check throughput for tolerance
     b) Start a new producer if everything is tickety boo and interval has elapsed
     """
-    def __init__(self, configuration, queue):
-        super().__init__(configuration, queue)
+    def __init__(self, configuration, queue, *args, **kwargs):
+        super().__init__(configuration, queue, *args, **kwargs)
 
         self.initial_producer_count = self.configuration["start_producer_count"]
         self.desired_producer_count = self.initial_producer_count

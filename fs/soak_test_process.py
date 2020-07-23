@@ -14,10 +14,10 @@ class SoakTestProcess(ThroughputProcess):
     """
     Soak test process
     """
-    def __init__(self, configuration, queue):
+    def __init__(self, configuration, queue, *args, **kwargs):
         # for a soak test we assume the system is already running
         # i.e. do not discard initial values
-        super().__init__(configuration, queue, discard_initial_values=False)
+        super().__init__(configuration, queue, discard_initial_values=False, *args, **kwargs)
         self.desired_producer_count = 0
 
         self.consumer_throughput_averages = []

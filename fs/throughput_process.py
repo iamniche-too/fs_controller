@@ -10,8 +10,9 @@ INITIAL_WINDOW_SIZE = 10
 @addlogger
 class ThroughputProcess(BaseProcess):
 
-    def __init__(self, configuration, queue, discard_initial_values=True):
-        super().__init__()
+    def __init__(self, configuration, queue, discard_initial_values=True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.configuration = configuration
         self.consumer_throughput_queue = queue
         self.threshold_exceeded = {}

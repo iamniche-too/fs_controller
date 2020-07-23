@@ -13,7 +13,8 @@ from fs.stoppable_process import StoppableProcess
 class BaseProcess(StoppableProcess):
 
     def __init__(self, *args, **kwargs):
-        super().__init()
+        super().__init(*args, **kwargs)
+
         base_directory = os.path.dirname(os.path.abspath(__file__))
         now = datetime.now()
         self.base_path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
