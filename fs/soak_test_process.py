@@ -3,7 +3,7 @@ from statistics import mean
 from fs.utils import DEFAULT_THROUGHPUT_MB_S, addlogger, SEVENTY_FIVE_MBPS_IN_GBPS
 
 # A 21GB pagefile can cache:
-# 168Gb / (0.59 * p / n) == 285 * n / p seconds of data.
+# 168Gb / (0.59 * p / n) == 285 * n / p seconds of log.
 # 110% = 313s
 from fs.throughput_process import ThroughputProcess
 
@@ -21,6 +21,7 @@ class SoakTestProcess(ThroughputProcess):
         self.desired_producer_count = 0
 
         self.consumer_throughput_averages = []
+        self.num_producers = 0
 
     def decrement_producer_count(self):
         actual_producer_count = self.get_producer_count()
@@ -113,6 +114,10 @@ class SoakTestProcess(ThroughputProcess):
             throughput = data["throughput"]
             num_producers = data["producer_count"]
 
+            # store the num_producers
+            if self.num_producers == 0:
+                self.num_producers = num_producers
+
             self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
             consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)][-5:])
 
@@ -134,9 +139,9 @@ class SoakTestProcess(ThroughputProcess):
                 break
 
         average_throughput = mean(self.consumer_throughput_averages)
-        self.__log.info(f"Soak test stats: min_throughput {self.min_throughput}, max_throughput {self.max_throughput}, average_throughput {average_throughput}")
+        self.__log.info(f"Soak test stats: num_producers {self.num_producers}, min_throughput {self.min_throughput}, max_throughput {self.max_throughput}, average_throughput {average_throughput}")
 
         # write out the key metrics
-        self.write_metrics(self.configuration, "CONFIGURATION_UID,SOAK_NUM_PRODUCERS,SOAK_THROUGHPUT_GBPS,SOAK_MIN_THROUGHPUT_GBPS,SOAK_MAX_THROUGHPUT_GBPS,SOAK_AVERAGE_THROUGHPUT_GBPS={0},{1},{2},{3},{4},{5}".format(self.configuration["configuration_uid"], str(num_producers), str(num_producers*SEVENTY_FIVE_MBPS_IN_GBPS), str(self.min_throughput*8/1000), str(self.max_throughput*8/1000), str(average_throughput*8/1000)))
+        self.write_metrics(self.configuration, "CONFIGURATION_UID,SOAK_NUM_PRODUCERS,SOAK_THROUGHPUT_GBPS,SOAK_MIN_THROUGHPUT_GBPS,SOAK_MAX_THROUGHPUT_GBPS,SOAK_AVERAGE_THROUGHPUT_GBPS={0},{1},{2},{3},{4},{5}".format(self.configuration["configuration_uid"], str(self.num_producers), str(num_producers*SEVENTY_FIVE_MBPS_IN_GBPS), str(self.min_throughput*8/1000), str(self.max_throughput*8/1000), str(average_throughput*8/1000)))
 
         self.__log.info(f"ended.")

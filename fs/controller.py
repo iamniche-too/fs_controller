@@ -38,23 +38,24 @@ class Controller:
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
 
         self.run_uid = "run_" + self.get_uid()
-        self.base_path = None
         self.configure_logging()
 
     def configure_logging(self):
         # log directory
         base_directory = os.path.dirname(os.path.abspath(__file__))
         now = datetime.now()
-        self.base_path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
+        
+        # path is of the form ~/../log/2020-20-07/run_AD56F8
+        base_path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"), self.run_uid)
 
-        if not os.path.exists(self.base_path):
-            os.makedirs(self.base_path)
+        if not os.path.exists(base_path):
+            os.makedirs(base_path)
 
         log_formatter = logging.Formatter("%(asctime)s [%(name)s] [%(levelname)-5.5s]  %(message)s")
         root_logger = logging.getLogger("fs")
         root_logger.setLevel(logging.INFO)
 
-        log_file = "{0}/{1}.log".format(self.base_path, self.run_uid)
+        log_file = "{0}/{1}.log".format(base_path, self.run_uid)
         print(f"Logging to file {log_file}")
 
         file_handler = logging.FileHandler(log_file)
@@ -371,8 +372,8 @@ class Controller:
         try:
             subprocess.check_call(args, stderr=subprocess.STDOUT, cwd=working_directory)
         except subprocess.CalledProcessError as e:
-            # There was an error - command exited with non-zero code
-            self.__log.error(f"{e.output}")
+            # There was an error running the command: command exited with non-zero code
+            self.__log.error(f"Process exited with non-zero code {e}")
             return False
 
         return True

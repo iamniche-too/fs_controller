@@ -14,12 +14,16 @@ class BaseProcess(StoppableProcess):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        base_directory = os.path.dirname(os.path.abspath(__file__))
-        now = datetime.now()
-        self.base_path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"))
+        self.base_directory = os.path.dirname(os.path.abspath(__file__))
 
     def write_metrics(self, configuration, data):
+        now = datetime.now()
+        base_path = os.path.join(self.base_directory, "..", "log", now.strftime("%Y-%m-%d"), configuration["run_uid"])
+
+        # create path if not exist
+        if not os.path.exists(base_path):
+            os.makedirs(base_path)
+
         metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
         metrics_file = os.path.join(self.base_path, metrics_filename)
         with open(metrics_file, 'a') as outfile:
