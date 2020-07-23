@@ -137,6 +137,6 @@ class SoakTestProcess(ThroughputProcess):
         self.__log.info(f"Soak test stats: min_throughput {self.min_throughput}, max_throughput {self.max_throughput}, average_throughput {average_throughput}")
 
         # write out the key metrics
-        self.write_metrics(self.configuration, "SOAK_NUM_PRODUCERS,SOAK_THROUGHPUT_GBPS,SOAK_MIN_THROUGHPUT_GBPS,SOAK_MAX_THROUGHPUT_GBPS,SOAK_AVERAGE_THROUGHPUT_GBPS={0},{1},{2},{3},{4}".format(str(num_producers), str(num_producers*SEVENTY_FIVE_MBPS_IN_GBPS), str(self.min_throughput*8/1000), str(self.max_throughput*8/1000), str(average_throughput*8/1000)))
+        self.write_metrics(self.configuration, "CONFIGURATION_UID,SOAK_NUM_PRODUCERS,SOAK_THROUGHPUT_GBPS,SOAK_MIN_THROUGHPUT_GBPS,SOAK_MAX_THROUGHPUT_GBPS,SOAK_AVERAGE_THROUGHPUT_GBPS={0},{1},{2},{3},{4},{5}".format(self.configuration["configuration_uid"], str(num_producers), str(num_producers*SEVENTY_FIVE_MBPS_IN_GBPS), str(self.min_throughput*8/1000), str(self.max_throughput*8/1000), str(average_throughput*8/1000)))
 
         self.__log.info(f"ended.")
