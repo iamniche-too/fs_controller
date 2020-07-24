@@ -34,7 +34,7 @@ def run():
         c = ReplicationFactorController(consumer_throughput_queue)
         c.flush_consumer_throughput_queue()
         c.run()
-        
+
         return
     elif args.controller == "message-size":
         print("Starting Message Size Controller")
@@ -54,7 +54,8 @@ def run():
         c.flush_consumer_throughput_queue()
         c.run()
         return
-
+    elif:
+        print(f"Did not understand argument {args.controller}, aborting...")
 
 if __name__ == '__main__':
     run()
