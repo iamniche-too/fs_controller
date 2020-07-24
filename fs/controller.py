@@ -305,18 +305,18 @@ class Controller:
         num_consumers = configuration["num_consumers"]
         attempts = (10 * num_consumers) / WAIT_INTERVAL
 
-        check_zks = self.check_zookeepers(num_zk)
+        check_consumers = self.check_zookeepers(num_consumers)
         i = 1
-        while not check_zks:
+        while not check_consumers:
             time.sleep(WAIT_INTERVAL)
-            check_zks = self.check_consumers(num_zk)
+            check_consumers = self.check_consumers(num_consumers)
             self.__log.info(f"Waiting for consumers to start...{i}/{attempts}")
             i += 1
             if i > attempts:
                 self.__log.error("Time-out waiting for consumers to start.")
                 return False
 
-        self.__log.info("ZKs started ok.")
+        self.__log.info("Consumers started ok.")
         return True
 
     def check_brokers_ok(self, configuration):
@@ -390,7 +390,6 @@ class Controller:
         if not all_ok:
             self.__log.info("Aborting configuration - consumers not ok.")
             return False
-        self.__log.info("Consumers started.")
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
