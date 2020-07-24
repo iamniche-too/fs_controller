@@ -85,12 +85,12 @@ class SoakTestProcess(ThroughputProcess):
     def run(self):
         self.__log.info("started.")
 
+        # set the desired producer count at the beginning
+        self.desired_producer_count = self.get_producer_count()
+
         stop = False
         while not stop:
             stop = self.check_throughput(window_size=5)
-
-        # producer count is what we have after stability is achieved
-        self.desired_producer_count = self.get_producer_count()
 
         num_producers = self.get_producer_count()
         self.__log.info(f"Throughput stability achieved @ {num_producers} producers.")
