@@ -68,6 +68,7 @@ class Controller:
 
     def post_json(self, endpoint_url, payload):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        self.__log.info("Posting configuration to endpoint {endpoint_url}")
         requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
 
     def run(self):

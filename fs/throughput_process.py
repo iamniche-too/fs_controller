@@ -37,6 +37,7 @@ class ThroughputProcess(BaseProcess):
             self.__log.info(f"Producer change detected: previous {self.previous_producer_count}, current {actual_producer_count} - resetting thresholds.")
             self.threshold_exceeded[consumer_id] = 0
         self.previous_producer_count = actual_producer_count
+        return actual_producer_count
 
     def check_throughput(self, window_size=INITIAL_WINDOW_SIZE):
         data = self.get_data(self.consumer_throughput_queue)

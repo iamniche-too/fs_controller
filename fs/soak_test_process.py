@@ -38,6 +38,13 @@ class SoakTestProcess(ThroughputProcess):
         else:
             self.__log.info("Producer count is zero.")
 
+    def reset_thresholds(self, consumer_id):
+        actual_producer_count = super().reset_thresholds(consumer_id)
+
+        # if producer count has changed i.e. been reduced, then update the desired count
+        if self.desired_producer_count > actual_producer_count:
+            self.desired_producer_count = actual_producer_count
+
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         self.__log.info(
             f"Consumer {consumer_id} average throughput {consumer_throughput_average} < tolerance {consumer_throughput_tolerance}")
@@ -78,11 +85,12 @@ class SoakTestProcess(ThroughputProcess):
     def run(self):
         self.__log.info("started.")
 
-        # currently desired value is what we already have
-        self.desired_producer_count = self.get_producer_count()
         stop = False
         while not stop:
             stop = self.check_throughput(window_size=5)
+
+        # producer count is what we have after stability is achieved
+        self.desired_producer_count = self.get_producer_count()
 
         num_producers = self.get_producer_count()
         self.__log.info(f"Throughput stability achieved @ {num_producers} producers.")
