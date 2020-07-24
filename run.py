@@ -54,8 +54,9 @@ def run():
         c.flush_consumer_throughput_queue()
         c.run()
         return
-    elif:
+    else:
         print(f"Did not understand argument {args.controller}, aborting...")
+
 
 if __name__ == '__main__':
     run()
