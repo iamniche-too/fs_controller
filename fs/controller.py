@@ -301,9 +301,9 @@ class Controller:
 
     def check_consumers_ok(self, configuration):
         # allow 10s per consumer
-        WAIT_INTERVAL = 5
+        WAIT_INTERVAL = 10
         num_consumers = configuration["num_consumers"]
-        attempts = (10 * num_consumers) / WAIT_INTERVAL
+        attempts = (45 * num_consumers) / WAIT_INTERVAL
 
         check_consumers = self.check_zookeepers(num_consumers)
         i = 1
