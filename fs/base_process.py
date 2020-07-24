@@ -25,7 +25,7 @@ class BaseProcess(StoppableProcess):
             os.makedirs(base_path)
 
         metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
-        metrics_file = os.path.join(self.base_path, metrics_filename)
+        metrics_file = os.path.join(base_path, metrics_filename)
         with open(metrics_file, 'a') as outfile:
             outfile.write(data + "\n")
 
