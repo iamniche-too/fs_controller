@@ -244,6 +244,18 @@ class Controller:
         # self.__log.info(f"zk={zk_count}")
         return zk_count
 
+    def get_consumers_count(self):
+        filename = "./get-consumers-count.sh"
+        args = [filename]
+
+        consumers_count = 0
+        try:
+            consumers_count = int(self.bash_command_with_output(args, SCRIPT_DIR))
+        except ValueError:
+            pass
+
+        return consumers_count
+
     def get_broker_count(self):
         filename = "./get-brokers-count.sh"
         args = [filename]
@@ -263,6 +275,9 @@ class Controller:
     def check_zookeepers(self, expected_zk_count):
         return self.get_zookeepers_count() == expected_zk_count
 
+    def check_consumers(self, expected_consumers_count):
+        return self.get_consumers_count() == expected_consumers_count
+
     def check_zk_ok(self, configuration):
         # allow 46s per ZK
         WAIT_INTERVAL = 10
@@ -279,6 +294,26 @@ class Controller:
             i += 1
             if i > attempts:
                 self.__log.error("Time-out waiting for zks to start.")
+                return False
+
+        self.__log.info("ZKs started ok.")
+        return True
+
+    def check_consumers_ok(self, configuration):
+        # allow 10s per consumer
+        WAIT_INTERVAL = 5
+        num_consumers = configuration["num_consumers"]
+        attempts = (10 * num_consumers) / WAIT_INTERVAL
+
+        check_zks = self.check_zookeepers(num_zk)
+        i = 1
+        while not check_zks:
+            time.sleep(WAIT_INTERVAL)
+            check_zks = self.check_consumers(num_zk)
+            self.__log.info(f"Waiting for consumers to start...{i}/{attempts}")
+            i += 1
+            if i > attempts:
+                self.__log.error("Time-out waiting for consumers to start.")
                 return False
 
         self.__log.info("ZKs started ok.")
@@ -350,8 +385,12 @@ class Controller:
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
-        # wait 5s for each consumer to start
-        time.sleep(5*configuration["num_consumers"])
+        self.__log.info("Waiting for consumers to start...")
+        all_ok = self.check_consumers_ok(configuration)
+        if not all_ok:
+            self.__log.info("Aborting configuration - consumers not ok.")
+            return False
+        self.__log.info("Consumers started.")
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
