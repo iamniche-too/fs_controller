@@ -103,6 +103,13 @@ class SoakTestProcess(ThroughputProcess):
         else:
             self.__log.info("No producers: aborting soak test...")
             self.stop()
+
+            json = {self.configuration["configuration_uid"]: {"soak_num_producers": 0,
+                                                              "soak_expected_throughput_gbps": 0,
+                                                              "soak_min_throughput": 0,
+                                                              "soak_max_throughput": 0,
+                                                              "soak_average_throughput": 0}}
+            self.write_metrics(self.configuration, json)
             return
 
         # reset min/max, as we are not interested in the values before this point
@@ -149,7 +156,14 @@ class SoakTestProcess(ThroughputProcess):
         average_throughput = mean(self.consumer_throughput_averages)
         self.__log.info(f"Soak test stats: num_producers {self.num_producers}, min_throughput {self.min_throughput}, max_throughput {self.max_throughput}, average_throughput {average_throughput}")
 
-        # write out the key metrics
-        self.write_metrics(self.configuration, "CONFIGURATION_UID,SOAK_NUM_PRODUCERS,SOAK_THROUGHPUT_GBPS,SOAK_MIN_THROUGHPUT_GBPS,SOAK_MAX_THROUGHPUT_GBPS,SOAK_AVERAGE_THROUGHPUT_GBPS={0},{1},{2},{3},{4},{5}".format(self.configuration["configuration_uid"], str(self.num_producers), str(num_producers*SEVENTY_FIVE_MBPS_IN_GBPS), str(self.min_throughput*8/1000), str(self.max_throughput*8/1000), str(average_throughput*8/1000)))
+        # write metrics as JSON
+        json = {self.configuration["configuration_uid"]: {"soak_num_producers": str(self.num_producers),
+                                                          "soak_expected_throughput_gbps": str(
+                                                              num_producers * SEVENTY_FIVE_MBPS_IN_GBPS),
+                                                          "soak_min_throughput": str(self.min_throughput * 8 / 1000),
+                                                          "soak_max_throughput": str(self.max_throughput * 8 / 1000),
+                                                          "soak_average_throughput": str(
+                                                              average_throughput * 8 / 1000)}}
+        self.write_metrics(self.configuration, json)
 
         self.__log.info(f"ended.")

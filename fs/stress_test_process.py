@@ -83,9 +83,11 @@ class StressTestProcess(ThroughputProcess):
             # cancel the outstanding increment
             self.k8s_scale_producers(actual_producer_count)
 
-        # write out the key metrics
+        # write out the key metrics as JSON
         throughput_gbps = actual_producer_count * SEVENTY_FIVE_MBPS_IN_GBPS
-        self.write_metrics(self.configuration, "CONFIGURATION_UID,STRESS_MAX_PRODUCERS,STRESS_MAX_GBPS={0},{1},{2}".format(self.configuration["configuration_uid"], str(actual_producer_count), str(throughput_gbps)))
+        json = {self.configuration["configuration_uid"]: {"stress_max_producers": str(actual_producer_count),
+                "stress_max_gbps": str(throughput_gbps), "stress_min_throughput": self.min_throughput, "stress_max_throughput": self.max_throughput}}
+        self.write_metrics(self.configuration, json)
 
         self.__log.info("ended.")
 

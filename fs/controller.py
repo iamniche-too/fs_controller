@@ -76,9 +76,12 @@ class Controller:
 
         self.__log.info(f"Loaded {len(self.configurations)} configurations.")
 
-        i = 1
+        sequence_number = 1
         for configuration in self.configurations:
-            self.__log.info(f"Configuration {i} of {len(self.configurations)}: {configuration}")
+            self.__log.info(f"Configuration {sequence_number} of {len(self.configurations)}: {configuration}")
+
+            # add the sequence number to the configuration
+            configuration["sequence_number"] = sequence_number
 
             self.provision_node_pool(configuration)
 
@@ -95,7 +98,7 @@ class Controller:
             global stop_threads
             stop_threads = False
 
-            i += 1
+            sequence_number += 1
 
     def k8s_delete_namespace(self, namespace):
         self.__log.info(f"Deleting namespace: {namespace}")
