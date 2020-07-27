@@ -39,8 +39,8 @@ class BaseProcess(StoppableProcess):
 
         # merge any desired features to the dict
         metrics_features = self.get_metrics_features()
+        d = {}
         for feature in metrics_features:
-            d = {}
             try:
                 d[feature] = self.configuration[feature]
             except KeyError:

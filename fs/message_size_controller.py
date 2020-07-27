@@ -23,9 +23,9 @@ class MessageSizeController(Controller):
         self.__log.info("Loading message size configurations.")
 
         # override the message size
-        # d = {"run_uid": self.run_uid, "message_size_kb": 75}
-        # template = dict(self.configuration_template, **d)
-        # self.configurations.extend(self.get_configurations(template))
+        d = {"run_uid": self.run_uid, "message_size_kb": 75}
+        template = dict(self.configuration_template, **d)
+        self.configurations.extend(self.get_configurations(template))
 
         # override the message size
         d = {"run_uid": self.run_uid, "message_size_kb": 750}
@@ -33,9 +33,9 @@ class MessageSizeController(Controller):
         self.configurations.extend(self.get_configurations(template))
 
         # override the message size
-        # d = {"run_uid": self.run_uid, "message_size_kb": 7500}
-        # template = dict(self.configuration_template, **d)
-        # self.configurations.extend(self.get_configurations(template))
+        d = {"run_uid": self.run_uid, "message_size_kb": 7500}
+        template = dict(self.configuration_template, **d)
+        self.configurations.extend(self.get_configurations(template))
 
     def get_soak_test_process(self, configuration, queue):
         """

@@ -22,14 +22,14 @@ class ReplicationFactorController(Controller):
         self.__log.info("Loading replication factor configurations.")
 
         # override the replication factor
-        d = {"run_uid": self.run_uid, "replication_factor": 1}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template))
+        # d = {"run_uid": self.run_uid, "replication_factor": 1}
+        # template = dict(self.configuration_template, **d)
+        # self.configurations.extend(self.get_configurations(template))
 
         # override the replication factor
-        d = {"run_uid": self.run_uid, "replication_factor": 3}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template))
+        # d = {"run_uid": self.run_uid, "replication_factor": 3}
+        # template = dict(self.configuration_template, **d)
+        # self.configurations.extend(self.get_configurations(template))
 
         # override the replication factor
         d = {"run_uid": self.run_uid, "replication_factor": 5}

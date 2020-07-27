@@ -58,12 +58,12 @@ class ThroughputProcess(BaseProcess):
 
         # discard the data if the producer count doesn't match what we are expecting
         if self.desired_producer_count != num_producers:
-            self.__log.info(f"num_producers {num_producers} != self.desired_producer_count {self.desired_producer_count}, producer not started yet? Discarding the data...")
+            self.__log.info(f"num_producers {num_producers} != self.desired_producer_count {self.desired_producer_count}, producer not started/stopped yet? Discarding the data...")
             return False
 
         # only append to list if it is not an initial value (avoids low throughput when starting up)
         if self.discard_initial_values:
-            if self.throughput_count > 3:
+            if self.throughput_count > 4:
                 # append throughput to specific list (as keyed by num_producers)
                 self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
 
