@@ -63,7 +63,7 @@ class SoakTestProcess2(SoakTestProcess):
         Overridden implementation
         :return:
         """
-        return ["num_consumers", "message_size"]
+        return ["num_consumers", "message_size_kb"]
 
 
 class StressTestProcess2(StressTestProcess):
@@ -72,7 +72,7 @@ class StressTestProcess2(StressTestProcess):
         Overridden implementation
         :return:
         """
-        return ["num_consumers", "message_size"]
+        return ["num_consumers", "message_size_kb"]
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
