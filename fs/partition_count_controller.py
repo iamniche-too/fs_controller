@@ -36,13 +36,6 @@ class PartitionCountController(Controller):
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 
-    def get_metrics_features(self):
-        """
-        Return metrics features of interest
-        :return:
-        """
-        return ["num_consumers", "number_of_partitions"]
-
     def get_soak_test_process(self, configuration, queue):
         """
         override default
@@ -51,9 +44,7 @@ class PartitionCountController(Controller):
         :param queue:
         :return:
         """
-        soak_test_process = SoakTestProcess(configuration, queue)
-        soak_test_process.get_metrics_features = types.MethodType(self.get_metrics_features, soak_test_process)
-        return soak_test_process
+        return SoakTestProcess2(configuration, queue)
 
     def get_stress_test_process(self, configuration, queue):
         """
@@ -62,10 +53,25 @@ class PartitionCountController(Controller):
         :param queue:
         :return:
         """
-        stress_test_process = StressTestProcess(configuration, queue)
-        stress_test_process.get_metrics_features = types.MethodType(self.get_metrics_features, stress_test_process)
-        return stress_test_process
+        return StressTestProcess2(configuration, queue)
 
+
+class SoakTestProcess2(SoakTestProcess):
+    def get_metrics_features(self):
+        """
+        Return metrics features of interest
+        :return:
+        """
+        return ["num_consumers", "number_of_partitions"]
+
+
+class StressTestProcess2(StressTestProcess):
+    def get_metrics_features(self):
+        """
+        Return metrics features of interest
+        :return:
+        """
+        return ["num_consumers", "number_of_partitions"]
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':

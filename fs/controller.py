@@ -22,6 +22,7 @@ class Controller:
 
     def __init__(self, queue):
         self.configurations = []
+        self.now = datetime.now()
 
         self.consumer_throughput_queue = queue
         self.stress_test_process = None
@@ -90,6 +91,8 @@ class Controller:
                 # wait for input to run configuration
                 # input("Setup complete. Press any key to run the configuration...")
                 self.run_configuration(configuration)
+
+            self.upload_metrics(configuration)
 
             # now teardown and unprovision
             self.teardown_configuration(configuration)
@@ -462,6 +465,13 @@ class Controller:
 
         # run soak test
         self.run_soak_test(configuration, self.consumer_throughput_queue)
+
+    def upload_metrics(self, configuration):
+        base_path = os.path.join(self.base_directory, "..", "log", self.now.strftime("%Y-%m-%d"),
+                                 configuration["run_uid"])
+        self.__log.info(f"Uploading metrics from {base_path} to gs://kafka-trial-data")
+        os.system(f"gsutil cp -r '{base_path}' gs://kafka-trial-data")
+        self.__log.info("Uploaded.")
 
     def get_uid(self):
         return str(uuid.uuid4().hex.upper()[0:6])
