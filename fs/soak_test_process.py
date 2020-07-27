@@ -18,7 +18,6 @@ class SoakTestProcess(ThroughputProcess):
         # for a soak test we assume the system is already running
         # i.e. do not discard initial values
         super().__init__(configuration, queue, discard_initial_values=False, *args, **kwargs)
-        self.desired_producer_count = 0
 
         self.consumer_throughput_averages = []
         self.num_producers = 0
@@ -69,10 +68,6 @@ class SoakTestProcess(ThroughputProcess):
             f"Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
         self.threshold_exceeded[consumer_id] = 0
 
-        # if the desired count is different to the actual count then carry on
-        if self.desired_producer_count != actual_producer_count:
-            return False
-
         # Check each consumer to see if we are stable
         is_stable = True
         for consumer_id in self.threshold_exceeded.keys():
@@ -90,7 +85,8 @@ class SoakTestProcess(ThroughputProcess):
 
         stop = False
         while not stop:
-            stop = self.check_throughput(window_size=5)
+            # 8 data points = (8 * 5) = 40s of data
+            stop = self.check_throughput(window_size=8)
 
         num_producers = self.get_producer_count()
         self.__log.info(f"Throughput stability achieved @ {num_producers} producers.")

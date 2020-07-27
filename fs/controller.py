@@ -420,10 +420,13 @@ class Controller:
 
         return True
 
+    def get_stress_test_process(self, configuration, queue):
+        return StressTestProcess(configuration, queue)
+
     def run_stress_test(self, configuration, queue):
         self.__log.info(f"3. Running stress test.")
 
-        self.stress_test_process = StressTestProcess(configuration, queue)
+        self.stress_test_process = self.get_stress_test_process(configuration, queue)
         self.stress_test_process.start()
 
         # wait for thread to exit
@@ -431,10 +434,13 @@ class Controller:
 
         self.__log.info(f"3. Stress test completed.")
 
+    def get_soak_test_process(self, configuration, queue):
+        return SoakTestProcess(configuration, queue)
+
     def run_soak_test(self, configuration, queue):
         self.__log.info(f"4. Running soak test.")
 
-        self.soak_test_process = SoakTestProcess(configuration, queue)
+        self.soak_test_process = self.get_soak_test_process(configuration, queue)
 
         # start the thread for soak test
         self.soak_test_process.start()
@@ -469,27 +475,28 @@ class Controller:
     def get_configurations(self, template):
         configurations = []
 
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
+        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
+        # configurations.append(dict(template, **d))
+
+        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
+        # configurations.append(dict(template, **d))
+
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7,
+             "teardown_broker_nodes": True}
         configurations.append(dict(template, **d))
 
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
-        configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7}
-        configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
-        configurations.append(dict(template, **d))
+        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
+        # configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
-        configurations.append(dict(template, **d))
+        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
+        # configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
         # Final configuration should bring down the nodes
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 6, "max_producer_count": 12,
-             "teardown_broker_nodes": True}
-        configurations.append(dict(template, **d))
+        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 6, "max_producer_count": 12,
+        #      "teardown_broker_nodes": True}
+        # configurations.append(dict(template, **d))
 
         return configurations
 

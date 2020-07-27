@@ -28,6 +28,8 @@ class ThroughputProcess(BaseProcess):
         self.min_throughput = 99999
         self.max_throughput = 0
 
+        self.desired_producer_count = 0
+
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         raise NotImplementedError("Please use a sub-class to implement the method.")
 
@@ -53,6 +55,11 @@ class ThroughputProcess(BaseProcess):
         self.reset_thresholds(consumer_id)
 
         self.__log.info(f"Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}")
+
+        # discard the data if the producer count doesn't match what we are expecting
+        if self.desired_producer_count != num_producers:
+            self.__log.info("num_producers != self.desired_producer_count, discarding the data...")
+            return False
 
         # only append to list if it is not an initial value (avoids low throughput when starting up)
         if self.discard_initial_values:

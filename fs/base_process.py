@@ -16,6 +16,13 @@ class BaseProcess(StoppableProcess):
         super().__init__(*args, **kwargs)
         self.base_directory = os.path.dirname(os.path.abspath(__file__))
 
+    def get_metrics_features(self):
+        """
+        Default implementation is an empty list
+        :return:
+        """
+        return []
+
     def write_metrics(self, configuration, data):
         """
         Write JSON to metrics file
@@ -30,6 +37,17 @@ class BaseProcess(StoppableProcess):
         # create path if not exist
         if not os.path.exists(base_path):
             os.makedirs(base_path)
+
+        # merge any desired features to the dict
+        metrics_features = self.get_metrics_features()
+        for feature in metrics_features:
+            d = {}
+            try:
+                d[feature] = self.configuration[feature]
+            except KeyError:
+                self.__log.error(f"Missing feature {feature} in configuration dict.")
+
+        data = {**data, **d}
 
         metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
         metrics_file = os.path.join(base_path, metrics_filename)
