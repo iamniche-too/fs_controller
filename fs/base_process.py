@@ -1,4 +1,3 @@
-import json
 import os
 import subprocess
 from datetime import datetime
@@ -15,6 +14,7 @@ class BaseProcess(StoppableProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.base_directory = os.path.dirname(os.path.abspath(__file__))
+        self.now = datetime.now()
 
     def get_metrics_features(self):
         """
@@ -31,8 +31,7 @@ class BaseProcess(StoppableProcess):
         :param data:
         :return:
         """
-        now = datetime.now()
-        base_path = os.path.join(self.base_directory, "..", "log", now.strftime("%Y-%m-%d"), configuration["run_uid"])
+        base_path = os.path.join(self.base_directory, "..", "log", self.now.strftime("%Y-%m-%d"), configuration["run_uid"])
 
         # create path if not exist
         if not os.path.exists(base_path):
