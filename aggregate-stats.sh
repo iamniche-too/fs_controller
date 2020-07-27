@@ -1,2 +1,3 @@
+#!/bin/bash
 export PYTHONPATH=`pwd`
-python aggregate-stats.py
+python3 aggregate-stats.py

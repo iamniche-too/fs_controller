@@ -82,7 +82,7 @@ class StressTestProcess(ThroughputProcess):
         # write out the key metrics as JSON
         throughput_gbps = actual_producer_count * SEVENTY_FIVE_MBPS_IN_GBPS
         json = {self.configuration["configuration_uid"]: {"stress_max_producers": str(actual_producer_count),
-                "stress_max_gbps": str(throughput_gbps), "stress_min_throughput": self.min_throughput, "stress_max_throughput": self.max_throughput}}
+                "stress_expected_throughput_gbps": str(throughput_gbps), "stress_min_throughput": str(self.min_throughput*8/1000), "stress_max_throughput": str(self.max_throughput*8/1000)}}
         self.write_metrics(self.configuration, json)
 
         self.__log.info("ended.")

@@ -486,8 +486,8 @@ class Controller:
     def get_configurations(self, template):
         configurations = []
 
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
-        configurations.append(dict(template, **d))
+        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
+        # configurations.append(dict(template, **d))
 
         # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
         # configurations.append(dict(template, **d))

@@ -11,9 +11,8 @@ INITIAL_WINDOW_SIZE = 10
 class ThroughputProcess(BaseProcess):
 
     def __init__(self, configuration, queue, discard_initial_values=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(configuration, *args, **kwargs)
 
-        self.configuration = configuration
         self.consumer_throughput_queue = queue
         self.threshold_exceeded = {}
         # initialise empty dict with empty dict of lists

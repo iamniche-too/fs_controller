@@ -11,10 +11,19 @@ from fs.stoppable_process import StoppableProcess
 @addlogger
 class BaseProcess(StoppableProcess):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, configuration, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.configuration = configuration
         self.base_directory = os.path.dirname(os.path.abspath(__file__))
         self.now = datetime.now()
+
+        self.base_path = os.path.join(self.base_directory, "..", "log", self.now.strftime("%Y-%m-%d"),
+                                 configuration["run_uid"])
+
+        # create path if not exist
+        if not os.path.exists(self.base_path):
+            os.makedirs(self.base_path)
+
 
     def get_metrics_features(self):
         """
@@ -31,13 +40,6 @@ class BaseProcess(StoppableProcess):
         :param data:
         :return:
         """
-        base_path = os.path.join(self.base_directory, "..", "log", self.now.strftime("%Y-%m-%d"), configuration["run_uid"])
-
-        # create path if not exist
-        if not os.path.exists(base_path):
-            os.makedirs(base_path)
-
-        # merge any desired features to the dict
         metrics_features = self.get_metrics_features()
         d = {}
         for feature in metrics_features:
@@ -46,12 +48,14 @@ class BaseProcess(StoppableProcess):
             except KeyError:
                 self.__log.error(f"Missing feature {feature} in configuration dict.")
 
-        data = {**data, **d}
+        # merge the two dictionaries under the configuration_uid key
+        data[configuration["configuration_uid"]] = dict(data[configuration["configuration_uid"]], **d)
 
         metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
-        metrics_file = os.path.join(base_path, metrics_filename)
+        metrics_file = os.path.join(self.base_path, metrics_filename)
         with open(metrics_file, 'a') as outfile:
             json.dump(data, outfile)
+            outfile.write(",\n")
 
     """
     Base process
