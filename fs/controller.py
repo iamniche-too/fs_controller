@@ -467,7 +467,8 @@ class Controller:
         self.run_soak_test(configuration, self.consumer_throughput_queue)
 
     def upload_metrics(self, configuration):
-        base_path = os.path.join(self.base_directory, "..", "log", self.now.strftime("%Y-%m-%d"),
+        base_directory = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.path.join(base_directory, "..", "log", self.now.strftime("%Y-%m-%d"),
                                  configuration["run_uid"])
         self.__log.info(f"Uploading metrics from {base_path} to gs://kafka-trial-data")
         os.system(f"gsutil cp -r '{base_path}' gs://kafka-trial-data")
