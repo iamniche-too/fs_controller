@@ -18,7 +18,7 @@ def run():
     consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
 
     if args.controller is None:
-        print("Starting All Controllers consecutively")
+        print("Running all Controllers consecutively...")
 
         print("1. Starting Message Size Controller")
         c = MessageSizeController(consumer_throughput_queue)
@@ -51,6 +51,12 @@ def run():
     elif args.controller == "replication-factor":
         print("Starting Replication Factor Controller")
         c = ReplicationFactorController(consumer_throughput_queue)
+        c.flush_consumer_throughput_queue()
+        c.run()
+        return
+    elif args.controller == "default":
+        print("Starting Default Controller")
+        c = DefaultController(consumer_throughput_queue)
         c.flush_consumer_throughput_queue()
         c.run()
         return
