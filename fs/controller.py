@@ -289,7 +289,7 @@ class Controller:
         # allow 46s per ZK
         WAIT_INTERVAL = 10
         num_zk = configuration["num_zk"]
-        attempts = (45 * num_zk) / WAIT_INTERVAL
+        attempts = (60 * num_zk) / WAIT_INTERVAL
 
         check_zks = self.check_zookeepers(num_zk)
         i = 1
