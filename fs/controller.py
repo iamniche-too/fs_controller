@@ -485,7 +485,8 @@ class Controller:
     def get_configurations(self, template, max_num_consumers=1):
         configurations = []
 
-        for num_consumers in max_num_consumers:
+        # zero offset
+        for num_consumers in range(1, max_num_consumers+1):
             d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
             configurations.append(dict(template, **d))
 
