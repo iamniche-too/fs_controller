@@ -26,17 +26,17 @@ class ReplicationFactorController(Controller):
         # override the replication factor
         d = {"run_uid": self.run_uid, "replication_factor": 1, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template), broker_count+1)
 
         # override the replication factor
         d = {"run_uid": self.run_uid, "replication_factor": 2, "start_producer_count": broker_count-1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template), broker_count+1)
 
         # override the replication factor
         d = {"run_uid": self.run_uid, "replication_factor": 3, "start_producer_count": 1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template))
+        self.configurations.extend(self.get_configurations(template), broker_count+1)
 
     def get_soak_test_process(self, configuration, queue):
         """

@@ -482,26 +482,12 @@ class Controller:
     def get_configuration_description(self):
         raise NotImplementedError("Please use a sub-class to implement the configuration description")
 
-    def get_configurations(self, template):
+    def get_configurations(self, template, max_num_consumers=1):
         configurations = []
 
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description()}
-        configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2}
-        configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3}
-        configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4}
-        configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 5}
-        configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 6}
-        configurations.append(dict(template, **d))
+        for num_consumers in max_num_consumers:
+            d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
+            configurations.append(dict(template, **d))
 
         return configurations
 
