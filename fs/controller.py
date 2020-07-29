@@ -360,7 +360,7 @@ class Controller:
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
-        self.k8s_deploy_zk(self.configuration["num_zk"])
+        self.k8s_deploy_zk(configuration["num_zk"])
 
         all_ok = self.check_zk_ok(configuration)
         if not all_ok:
