@@ -21,18 +21,20 @@ class PartitionCountController(Controller):
         """
         self.__log.info("Loading partition count configurations...")
 
+        broker_count = self.configuration["number_of_brokers"]
+
         # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": 5}
+        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count*1, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 
         # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": 15}
+        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count*2, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 
         # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": 30}
+        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count*3, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 

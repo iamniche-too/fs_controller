@@ -21,20 +21,22 @@ class ReplicationFactorController(Controller):
         """
         self.__log.info("Loading replication factor configurations.")
 
+        broker_count = self.configuration["number_of_brokers"]
+
         # override the replication factor
-        d = {"run_uid": self.run_uid, "replication_factor": 1}
+        d = {"run_uid": self.run_uid, "replication_factor": 1, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 
         # override the replication factor
-        # d = {"run_uid": self.run_uid, "replication_factor": 3}
-        # template = dict(self.configuration_template, **d)
-        # self.configurations.extend(self.get_configurations(template))
+        d = {"run_uid": self.run_uid, "replication_factor": 2, "start_producer_count": broker_count-1}
+        template = dict(self.configuration_template, **d)
+        self.configurations.extend(self.get_configurations(template))
 
         # override the replication factor
-        # d = {"run_uid": self.run_uid, "replication_factor": 5}
-        # template = dict(self.configuration_template, **d)
-        # self.configurations.extend(self.get_configurations(template))
+        d = {"run_uid": self.run_uid, "replication_factor": 3, "start_producer_count": 1}
+        template = dict(self.configuration_template, **d)
+        self.configurations.extend(self.get_configurations(template))
 
     def get_soak_test_process(self, configuration, queue):
         """

@@ -4,12 +4,13 @@ from datetime import datetime
 import json
 import greenstalk
 
+from fs.read_write_jsonl_mixin import ReadWriteJSONLMixin
 from fs.utils import SCRIPT_DIR, addlogger
 from fs.stoppable_process import StoppableProcess
 
 
 @addlogger
-class BaseProcess(StoppableProcess):
+class BaseProcess(StoppableProcess, ReadWriteJSONLMixin):
 
     def __init__(self, configuration, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,9 +54,9 @@ class BaseProcess(StoppableProcess):
 
         metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
         metrics_file = os.path.join(self.base_path, metrics_filename)
-        with open(metrics_file, 'a') as outfile:
-            json.dump(data, outfile)
-            outfile.write(",\n")
+
+        # expects a list, so pass in dict wrapped in a list
+        self.dump_jsonl([data], metrics_file, append=True)
 
     """
     Base process

@@ -30,10 +30,10 @@ class Controller:
 
         # template configuration
         # 5 brokers, 3 ZK
-        self.configuration_template = {"number_of_brokers": 5, "message_size_kb": 750, "start_producer_count": 1,
+        self.configuration_template = {"number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1,
                                   "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 60,
                                   "machine_size": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
-                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": False, "replication_factor": 1, "num_zk": 3}
+                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": True, "replication_factor": 1, "num_zk": 1}
 
         # default the number of partitions
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
@@ -486,28 +486,25 @@ class Controller:
     def get_configurations(self, template):
         configurations = []
 
-        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "start_producer_count": 9}
-        # configurations.append(dict(template, **d))
-
-        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2, "start_producer_count": 8}
-        # configurations.append(dict(template, **d))
-
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3, "start_producer_count": 7,
-             "teardown_broker_nodes": True}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description()}
         configurations.append(dict(template, **d))
 
-        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4, "start_producer_count": 4}
-        # configurations.append(dict(template, **d))
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 2}
+        configurations.append(dict(template, **d))
+
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 3}
+        configurations.append(dict(template, **d))
+
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4}
+        configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
-        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 5, "max_producer_count": 14}
-        # configurations.append(dict(template, **d))
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 5}
+        configurations.append(dict(template, **d))
 
         # start_producer_count defaults to 1
-        # Final configuration should bring down the nodes
-        # d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 6, "max_producer_count": 12,
-        #      "teardown_broker_nodes": True}
-        # configurations.append(dict(template, **d))
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 6}
+        configurations.append(dict(template, **d))
 
         return configurations
 

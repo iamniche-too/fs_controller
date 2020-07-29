@@ -22,18 +22,20 @@ class MessageSizeController(Controller):
         """
         self.__log.info("Loading message size configurations.")
 
+        broker_count = self.configuration["number_of_brokers"]
+
         # override the message size
-        d = {"run_uid": self.run_uid, "message_size_kb": 75}
+        d = {"run_uid": self.run_uid, "message_size_kb": 75, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 
         # override the message size
-        d = {"run_uid": self.run_uid, "message_size_kb": 750}
+        d = {"run_uid": self.run_uid, "message_size_kb": 750, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 
         # override the message size
-        d = {"run_uid": self.run_uid, "message_size_kb": 7500}
+        d = {"run_uid": self.run_uid, "message_size_kb": 7500, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template))
 
