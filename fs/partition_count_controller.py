@@ -75,6 +75,7 @@ class StressTestProcess2(StressTestProcess):
         """
         return ["num_consumers", "number_of_partitions"]
 
+
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
     consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')

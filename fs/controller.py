@@ -162,7 +162,7 @@ class Controller:
         else:
           self.__log.info("Broker nodes left standing.")
 
-    def k8s_deploy_zk(self):
+    def k8s_deploy_zk(self, num_zk):
         """
         run a script to deploy ZK
         :return:
@@ -170,7 +170,7 @@ class Controller:
         self.__log.info(f"Deploying ZK...")
 
         filename = "./deploy-zk.sh"
-        args = [filename]
+        args = [filename, str(num_zk)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     def k8s_deploy_kafka(self, num_partitions, replication_factor):
@@ -360,8 +360,7 @@ class Controller:
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
 
-        # Note - hard-coded to 3 ZK in zookeeper-3.4.14/zookeeper-statefulset.yaml
-        self.k8s_deploy_zk()
+        self.k8s_deploy_zk(self.configuration["num_zk"])
 
         all_ok = self.check_zk_ok(configuration)
         if not all_ok:
@@ -498,11 +497,9 @@ class Controller:
         d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 4}
         configurations.append(dict(template, **d))
 
-        # start_producer_count defaults to 1
         d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 5}
         configurations.append(dict(template, **d))
 
-        # start_producer_count defaults to 1
         d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": 6}
         configurations.append(dict(template, **d))
 
