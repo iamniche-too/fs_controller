@@ -22,7 +22,7 @@ class MessageSizeController(Controller):
         """
         self.__log.info("Loading message size configurations.")
 
-        broker_count = self.configuration["number_of_brokers"]
+        broker_count = self.configuration_template["number_of_brokers"]
 
         # override the message size
         d = {"run_uid": self.run_uid, "message_size_kb": 75, "start_producer_count": (broker_count*2)-1}

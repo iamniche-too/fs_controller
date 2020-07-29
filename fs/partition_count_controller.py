@@ -21,7 +21,7 @@ class PartitionCountController(Controller):
         """
         self.__log.info("Loading partition count configurations...")
 
-        broker_count = self.configuration["number_of_brokers"]
+        broker_count = self.configuration_template["number_of_brokers"]
 
         # override the partition count
         d = {"run_uid": self.run_uid, "number_of_partitions": broker_count*1, "start_producer_count": (broker_count*2)-1}

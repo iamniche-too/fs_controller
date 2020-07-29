@@ -21,7 +21,7 @@ class ReplicationFactorController(Controller):
         """
         self.__log.info("Loading replication factor configurations.")
 
-        broker_count = self.configuration["number_of_brokers"]
+        broker_count = self.configuration_template["number_of_brokers"]
 
         # override the replication factor
         d = {"run_uid": self.run_uid, "replication_factor": 1, "start_producer_count": (broker_count*2)-1}
