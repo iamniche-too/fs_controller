@@ -5,7 +5,7 @@ class ReadWriteJSONLMixin:
     """
     Mixin class to read and write data in JSONL format
     """
-    def dump_jsonl(data, output_path, append=False):
+    def dump_jsonl(self, data, output_path, append=False):
         """
         Write list of objects to a JSON lines file.
         """
@@ -16,7 +16,7 @@ class ReadWriteJSONLMixin:
                 f.write(json_record + '\n')
         print('Wrote {} records to {}'.format(len(data), output_path))
 
-    def load_jsonl(input_path) -> list:
+    def load_jsonl(self, input_path) -> list:
         """
         Read list of objects from a JSON lines file.
         """
