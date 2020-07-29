@@ -49,8 +49,8 @@ class BaseProcess(StoppableProcess, ReadWriteJSONLMixin):
             except KeyError:
                 self.__log.error(f"Missing feature {feature} in configuration dict.")
 
-        # merge the two dictionaries under the configuration_uid key
-        data[configuration["configuration_uid"]] = dict(data[configuration["configuration_uid"]], **d)
+        # merge the two dictionaries
+        data = dict(data, **d)
 
         metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
         metrics_file = os.path.join(self.base_path, metrics_filename)
