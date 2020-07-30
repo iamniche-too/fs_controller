@@ -78,7 +78,7 @@ class SoakTestProcess(ThroughputProcess):
         return is_stable
 
     def run(self):
-        self.__log.info("started.")
+        self.__log.info("Started.")
 
         # set the desired producer count at the beginning
         self.desired_producer_count = self.get_producer_count()
@@ -107,6 +107,7 @@ class SoakTestProcess(ThroughputProcess):
                     "soak_min_throughput": 0,
                     "soak_max_throughput": 0,
                     "soak_average_throughput": 0}
+            self.__log.info(f"Soak soak stats: {json}")
             self.write_metrics(self.configuration, json)
             return
 
@@ -162,6 +163,7 @@ class SoakTestProcess(ThroughputProcess):
                 "soak_min_throughput": str(self.min_throughput * 8 / 1000),
                 "soak_max_throughput": str(self.max_throughput * 8 / 1000),
                 "soak_average_throughput": str(average_throughput * 8 / 1000)}
+        self.__log.info(f"Soak test stats: {json}")
         self.write_metrics(self.configuration, json)
 
-        self.__log.info(f"ended.")
+        self.__log.info(f"Completed.")

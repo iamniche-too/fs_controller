@@ -327,10 +327,9 @@ class Controller:
         return True
 
     def check_brokers_ok(self, configuration):
-        # allow 30s per broker
         WAIT_INTERVAL = 10
         num_brokers = configuration["number_of_brokers"]
-        attempts = (90 * num_brokers) / WAIT_INTERVAL
+        attempts = (120 * num_brokers) / WAIT_INTERVAL
 
         check_brokers = self.check_brokers(num_brokers)
         i = 1

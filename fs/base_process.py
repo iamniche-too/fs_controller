@@ -52,7 +52,7 @@ class BaseProcess(StoppableProcess, ReadWriteJSONLMixin):
         # merge the two dictionaries
         data = dict(data, **d)
 
-        metrics_filename = "{0}_metrics.csv".format(configuration["configuration_uid"])
+        metrics_filename = "{0}_metrics_{1}.csv".format(configuration["configuration_uid"], configuration["sequence_number"])
         metrics_file = os.path.join(self.base_path, metrics_filename)
 
         # expects a list, so pass in dict wrapped in a list

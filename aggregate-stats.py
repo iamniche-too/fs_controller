@@ -1,12 +1,14 @@
 import csv
 import glob
-import json
 import os
 
-INCLUDED_METRICS_FILES = ["C30E5C"]
+from fs.read_write_jsonl_mixin import ReadWriteJSONLMixin
+
+# TODO - move to command line parameter
+INCLUDED_RUN_UIDS = ["D2287F", "CEFABA", "6904B2"]
 
 
-class AggregateStats:
+class AggregateStats(ReadWriteJSONLMixin):
 
     def __init__(self):
         self.path = os.path.dirname(os.path.abspath(__file__))
@@ -30,11 +32,11 @@ class AggregateStats:
             # strip the .log
             run_uid = file_name[:-4]
             print(f"Found run_uid: {run_uid}")
-            if i == 0:
-                self.parse_files_per_run(self.path, run_uid, first_entry=True)
-            else:
+
+            if run_uid[4:] in INCLUDED_RUN_UIDS:
                 self.parse_files_per_run(self.path, run_uid)
-            i += 1
+            else:
+                print(f"Ignoring run_uid {run_uid}")
 
     def get_run_logs(self, path):
         file_list = [file_path for file_path in glob.glob(path, recursive=True)]
@@ -45,38 +47,52 @@ class AggregateStats:
         file_list = self.get_metrics_files_per_run(path, run_uid)
         print(f"Found {len(file_list)} files for run_uid {run_uid}.")
 
-        i = 0
+        results = []
         for file in file_list:
+            single_dict_per_file = {}
+
             print(f"Reading file {file}")
+            data = self.load_jsonl(file)
+            print(f"Found {len(data)} rows in file {file}.")
 
-            with open(file, 'r', encoding='utf-8-sig') as input_file:
-                data = json.load(input_file)
-                print(data)
+            # print(data)
+            if len(data) == 0:
+                print("Warning: no data rows in file {file}")
+                continue
 
-                output_file = os.path.join(self.output_directory, "results.csv")
+            # add run_uid to data
+            data[0]["run_uid"] = run_uid
 
-                mode = "a"
-                if first_entry:
-                    mode = "w"
+            if len(data) == 2:
+                # merge to a single dict
+                single_dict_per_file = dict(data[0], **data[1])
+            elif len(data) == 1:
+                single_dict_per_file = dict(data[0])
+            else:
+                print("Warning: >2 data rows in file {file}")
+                continue
 
-                with open(output_file, mode) as output_file:
-                    for configuration_uid in data.keys():
-                        d = data[configuration_uid]
-                        d = dict({"run_uid": run_uid, "configuration_uid": configuration_uid}, **d)
-                        w = csv.DictWriter(output_file, d.keys())
+            print(single_dict_per_file)
 
-                        # write out the headers
-                        if i == 0:
-                            w.writerow(dict((fn, fn) for fn in d.keys()))
+            results.append(single_dict_per_file)
 
-                        w.writerow(d)
-                        print(f"Wrote entry for {configuration_uid}")
+        output_file = os.path.join(self.output_directory, "{0}_results.csv".format(run_uid))
+        write_headers = True
+        with open(output_file, "w") as output_file:
+            print(results)
 
-                    output_file.write("\n")
-            i += 1
+            for data_dict in results:
+                w = csv.DictWriter(output_file, data_dict.keys())
+
+                # write out the headers
+                if write_headers:
+                    w.writerow(dict((fn, fn) for fn in data_dict.keys()))
+                    write_headers = False
+
+                w.writerow(data_dict)
 
     def get_metrics_files_per_run(self, path, run_uid):
-        glob_path = os.path.join(path, "log", run_uid, "*_metrics.csv")
+        glob_path = os.path.join(path, "log", run_uid, "*_metrics_*.csv")
         # if self.includes(file_path)
         file_list = [file_path for file_path in glob.glob(glob_path, recursive=True)]
         return file_list
