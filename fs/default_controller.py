@@ -7,6 +7,14 @@ from fs.utils import addlogger
 @addlogger
 class DefaultController(Controller):
 
+    def post_setup_hook(self):
+        """
+        After setup, wait for key inout to continue
+        i.e. we can pause with Kafka brokers running at this point
+        :return:
+        """
+        input("Setup complete. Press any key to run the configuration...")
+
     def get_configuration_description(self):
         return "Default test"
 

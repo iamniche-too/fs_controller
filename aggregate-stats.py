@@ -67,6 +67,8 @@ class AggregateStats(ReadWriteJSONLMixin):
                 # merge to a single dict
                 single_dict_per_file = dict(data[0], **data[1])
             elif len(data) == 1:
+                # missing one of the metrics
+                # TODO - rationalise which one is missing and patch the data?
                 single_dict_per_file = dict(data[0])
             else:
                 print("Warning: >2 data rows in file {file}")
@@ -92,7 +94,7 @@ class AggregateStats(ReadWriteJSONLMixin):
                 w.writerow(data_dict)
 
     def get_metrics_files_per_run(self, path, run_uid):
-        glob_path = os.path.join(path, "log", run_uid, "*_metrics_*.csv")
+        glob_path = os.path.join(path, "log", run_uid, "*_metrics*.csv")
         # if self.includes(file_path)
         file_list = [file_path for file_path in glob.glob(glob_path, recursive=True)]
         return file_list

@@ -12,7 +12,7 @@ from fs.stress_test_process import StressTestProcess
 from fs.soak_test_process import SoakTestProcess
 from fs.utils import SCRIPT_DIR, PRODUCER_CONSUMER_NAMESPACE, KAFKA_NAMESPACE, KAFKA_DEPLOY_DIR, BURROW_DIR, \
     PRODUCERS_CONSUMERS_DEPLOY_DIR, CLUSTER_NAME, CLUSTER_ZONE, TERRAFORM_DIR, SERVICE_ACCOUNT_EMAIL, \
-    ENDPOINT_URL, addlogger
+    ENDPOINT_URL, addlogger, MONITORING_DIR
 
 stop_threads = False
 
@@ -72,6 +72,13 @@ class Controller:
         self.__log.info("Posting configuration to endpoint {endpoint_url}")
         requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
 
+    def post_setup_hook(self):
+        """
+        Default implementaton is to do nothing
+        :return:
+        """
+        pass
+
     def run(self):
         self.load_configurations()
 
@@ -88,8 +95,7 @@ class Controller:
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
-                # wait for input to run configuration
-                # input("Setup complete. Press any key to run the configuration...")
+                # run the configuration
                 self.run_configuration(configuration)
 
             self.upload_metrics(configuration)
@@ -196,7 +202,14 @@ class Controller:
 
         return burrow_ip
 
-    # run a script to deploy producers/consumers
+    # run a script to deploy prometheus
+    def k8s_deploy_monitoring(self):
+        self.__log.info(f"Deploying Prometheus & Grafana...")
+        filename = "./deploy.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, MONITORING_DIR)
+
+    # run a script to deploy burrow
     def k8s_deploy_burrow(self):
         self.__log.info(f"Deploying Burrow...")
         filename = "./deploy.sh"
@@ -398,6 +411,9 @@ class Controller:
 
         # post configuration to the consumer reporting endpoint
         self.post_json(ENDPOINT_URL, configuration)
+
+        # perform a post-setup operation if required
+        self.post_setup_hook()
 
         return True
 
