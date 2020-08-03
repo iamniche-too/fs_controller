@@ -69,7 +69,7 @@ class Controller:
 
     def post_json(self, endpoint_url, payload):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        self.__log.info("Posting configuration to endpoint {endpoint_url}")
+        self.__log.info(f"Posting configuration to endpoint {endpoint_url}")
         requests.post(endpoint_url, data=json.dumps(payload), headers=headers)
 
     def post_setup_hook(self):
@@ -401,7 +401,8 @@ class Controller:
         self.k8s_deploy_burrow()
 
         # deploy the monitoring (prometheus/grafana)
-        self.k8s_deploy_monitoring()
+        # Note - monitoring is manual deployed to avoid change in external IP
+        # self.k8s_deploy_monitoring()
 
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
