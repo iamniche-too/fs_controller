@@ -7,18 +7,18 @@ KAFKA_NAMESPACE = "kafka"
 SCRIPT_DIR = "./scripts/"
 TERRAFORM_DIR = "./terraform/"
 
-# set this to where-ever fs-kafka-k8s is cloned
-# KAFKA_DEPLOY_DIR = "/home/nicholas/workspace/fs-kafka-k8s/"
+# TODO - use BASE_DIR consistently for all static variables
+BASE_DIR = "/data/open-platform-checkouts"
 KAFKA_DEPLOY_DIR = "/data/open-platform-checkouts/fs-kafka-k8s"
-# PRODUCERS_CONSUMERS_DEPLOY_DIR = "/home/nicholas/workspace/fs-producer-consumer-k8s"
 PRODUCERS_CONSUMERS_DEPLOY_DIR = "/data/open-platform-checkouts/fs-producer-consumer-k8s"
 BURROW_DIR = "/data/open-platform-checkouts/fs-burrow-k8s"
+MONITORING_DIR = BASE_DIR + "/fs-monitoring-k8s"
 
 DEFAULT_CONSUMER_TOLERANCE = 0.90
 DEFAULT_THROUGHPUT_MB_S = 75
 SEVENTY_FIVE_MBPS_IN_GBPS = 0.6
 
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-6d4112099e9b@kafka-k8s-trial.iam.gserviceaccount.com"
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-417371906744@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"
