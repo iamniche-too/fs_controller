@@ -400,6 +400,9 @@ class Controller:
         # deploy burrow
         self.k8s_deploy_burrow()
 
+        # deploy the monitoring (prometheus/grafana)
+        self.k8s_deploy_monitoring()
+
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
 
