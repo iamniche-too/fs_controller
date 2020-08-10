@@ -37,7 +37,19 @@ class TestController(unittest.TestCase):
                          "tags": "kafka-broker-node"}
         # gcloud_parameters["local-ssd-volumes"] = "count=1,type=nvme,format=fs"
         executed_command = self.controller.run_gcloud_command(gcloud_command, gcloud_parameters, execute=False)
-        self.assertEqual("gcloud container node-pools create kafka-node-pool--cluster=gke-kafka-cluster --num-nodes=3 --disk-size=100 --disk-type=pd-ssd --machine-type=n1-standard-8 --service-account=test@test.com --local-ssd-count=1 --max-nodes=7 --min-nodes=3 --node-labels=kafka-broker-node=true --tags=kafka-broker-node ", executed_command)
+        self.assertEqual(
+            "gcloud container node-pools create kafka-node-pool " +
+            "--cluster=gke-kafka-cluster " +
+            "--num-nodes=3 --disk-size=100 " +
+            "--disk-type=pd-ssd " +
+            "--machine-type=n1-standard-8 " +
+            "--service-account=test@test.com " +
+            "--local-ssd-count=1 " +
+            "--max-nodes=7 " +
+            "--min-nodes=3 " +
+            "--node-labels=kafka-broker-node=true " +
+            "--tags=kafka-broker-node ",
+            executed_command)
 
     def test_run_soak_test(self):
         self.controller.flush_consumer_throughput_queue()
