@@ -533,8 +533,7 @@ class Controller:
 
     def provision_kafka_broker_nodes(self, configuration):
         self.__log.info("1. Provisioning Kafka broker node pool.")
-        # Note --local-ssd-volumes has been *added* to gcloud alpha container node-pools create
-        # see https://cloud.google.com/sdk/gcloud/reference/alpha/container/node-pools/create#--local-ssd-volumes
+
         cluster = "gke-kafka-cluster"
         node_pool = "kafka-node-pool"
         gcloud_command = "container node-pools create {0}".format(node_pool)
@@ -549,7 +548,8 @@ class Controller:
     def provision_node_pool(self, configuration):
         self.__log.info("1. Provisioning node pool.")
 
-        self.provision_kafka_broker_nodes()
+        # provision using gcloud, not terraform
+        self.provision_kafka_broker_nodes(configuration)
 
         filename = "./generate-zk-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL]
