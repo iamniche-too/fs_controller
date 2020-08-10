@@ -532,25 +532,27 @@ class Controller:
 
         return output
 
-    def provision_kafka_broker_nodes(self, configuration):
+    def provision_kafka_broker_nodes(self, configuration, alpha=False):
         self.__log.info("1. Provisioning Kafka broker node pool.")
 
         cluster = "gke-kafka-cluster"
         node_pool = "kafka-node-pool"
         gcloud_command = "container node-pools create {0}".format(node_pool)
 
-        # "service-account": SERVICE_ACCOUNT_EMAIL,
-        # "local-ssd-count": 1,
         gcloud_parameters = {"cluster": cluster, "num-nodes": configuration["number_of_brokers"],
                              "disk-size": configuration["disk_size"], "disk-type": configuration["disk_type"],
                              "machine-type": configuration["machine_type"], "max-nodes": 7,
                              "min-nodes": 3, "node-labels": "kafka-broker-node=true", "tags": "kafka-broker-node",
-                             "local-ssd-volumes": "count=1,type=nvme,format=fs"}
+                             "service-account": SERVICE_ACCOUNT_EMAIL}
 
-        # Format the local SSD (using an alpha feature)
+        # Local SSD
         # see https://cloud.google.com/sdk/gcloud/reference/alpha/container/node-pools/create#--local-ssd-volumes
+        if alpha:
+            gcloud_parameters["local-ssd-volumes"] = "count=1,type=nvme,format=fs"
+        else:
+            gcloud_parameters["local-ssd-count"] = 1
 
-        self.run_gcloud_command(gcloud_command, gcloud_parameters, alpha=True)
+        self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
     def provision_node_pool(self, configuration):
         self.__log.info("1. Provisioning node pool.")
