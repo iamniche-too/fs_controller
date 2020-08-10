@@ -91,7 +91,7 @@ class Controller:
             # add the sequence number to the configuration
             configuration["sequence_number"] = sequence_number
 
-            self.provision_node_pool(configuration)
+            self.provision_node_pools(configuration)
 
             # only run if everything is ok
             if self.setup_configuration(configuration):
@@ -367,7 +367,7 @@ class Controller:
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
     def setup_configuration(self, configuration):
-        self.__log.info(f"2. Setup configuration: {configuration}")
+        self.__log.info(f"Setup configuration: {configuration}")
 
         # configure gcloud (output is kubeconfig.yaml)
         self.configure_gcloud(CLUSTER_NAME, CLUSTER_ZONE)
@@ -445,7 +445,7 @@ class Controller:
         return StressTestProcess(configuration, queue)
 
     def run_stress_test(self, configuration, queue):
-        self.__log.info(f"3. Running stress test.")
+        self.__log.info(f"Running stress test.")
 
         self.stress_test_process = self.get_stress_test_process(configuration, queue)
         self.stress_test_process.start()
@@ -453,13 +453,13 @@ class Controller:
         # wait for thread to exit
         self.stress_test_process.join()
 
-        self.__log.info(f"3. Stress test completed.")
+        self.__log.info(f"Stress test completed.")
 
     def get_soak_test_process(self, configuration, queue):
         return SoakTestProcess(configuration, queue)
 
     def run_soak_test(self, configuration, queue):
-        self.__log.info(f"4. Running soak test.")
+        self.__log.info(f"Running soak test.")
 
         self.soak_test_process = self.get_soak_test_process(configuration, queue)
 
@@ -469,10 +469,10 @@ class Controller:
         # wait for thread to exit
         self.soak_test_process.join()
 
-        self.__log.info(f"3. Soak test completed.")
+        self.__log.info(f"Soak test completed.")
 
     def run_configuration(self, configuration):
-        self.__log.info(f"3. Running configuration: {configuration}")
+        self.__log.info(f"Running configuration: {configuration}")
 
         # Configure producers with required number of initial producers and their message size
         # Note - number of producers may be greater than 0
@@ -533,7 +533,7 @@ class Controller:
         return output
 
     def provision_kafka_broker_nodes(self, configuration, alpha=False):
-        self.__log.info("1. Provisioning Kafka broker node pool.")
+        self.__log.info("Provisioning Kafka broker node pool.")
 
         cluster = "gke-kafka-cluster"
         node_pool = "kafka-node-pool"
@@ -554,24 +554,34 @@ class Controller:
 
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
-    def provision_node_pool(self, configuration):
-        self.__log.info("1. Provisioning node pool.")
+    def provision_zk_nodes(self, configuration):
+        self.__log.info("Provisioning ZK node pool.")
+
+        cluster = "gke-kafka-cluster"
+        node_pool = "zk-node-pool"
+        gcloud_command = "container node-pools create {0}".format(node_pool)
+
+        gcloud_parameters = {"cluster": cluster, "num-nodes": configuration["num_zk"],
+                             "disk-size": 100, "disk-type": "pd-ssd",
+                             "machine-type": "n1-standard-2", "max-nodes": 3,
+                             "min-nodes": 1, "node-labels": "zk-node=true", "tags": "zk-node",
+                             "service-account": SERVICE_ACCOUNT_EMAIL}
+
+        self.run_gcloud_command(gcloud_command, gcloud_parameters)
+
+    def provision_node_pools(self, configuration):
+        self.__log.info("Provisioning node pool.")
 
         # provision using gcloud, not terraform
         self.provision_kafka_broker_nodes(configuration)
 
-        filename = "./generate-zk-node-pool.sh"
-        args = [filename, SERVICE_ACCOUNT_EMAIL]
-        self.bash_command_with_wait(args, TERRAFORM_DIR)
+        # also provision using gcloud, not terraform
+        self.provision_zk_nodes(configuration)
 
-        filename = "./provision.sh"
-        args = [filename]
-        self.bash_command_with_wait(args, TERRAFORM_DIR)
-
-        self.__log.info("Node pool provisioned.")
+        self.__log.info("Node pools provisioned.")
 
     def unprovision_node_pool(self, configuration):
-        self.__log.info(f"5. Unprovisioning node pool: {configuration}")
+        self.__log.info(f"Unprovisioning node pool: {configuration}")
         filename = "./unprovision.sh"
         args = [filename]
         self.bash_command_with_wait(args, TERRAFORM_DIR)
