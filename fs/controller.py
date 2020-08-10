@@ -591,12 +591,12 @@ class Controller:
         cluster = "gke-kafka-cluster"
         node_pool = "kafka-node-pool"
         gcloud_command = "container node-pools delete {0}".format(node_pool)
-        gcloud_parameters = {"cluster": cluster}
+        gcloud_parameters = {"cluster": cluster, "quiet": True}
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
         node_pool = "zk-node-pool"
         gcloud_command = "container node-pools delete {0}".format(node_pool)
-        gcloud_parameters = {"cluster": cluster}
+        gcloud_parameters = {"cluster": cluster, "quiet": True}
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
         self.__log.info("Node pools unprovisioned.")
