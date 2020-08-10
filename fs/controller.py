@@ -537,11 +537,16 @@ class Controller:
         cluster = "gke-kafka-cluster"
         node_pool = "kafka-node-pool"
         gcloud_command = "container node-pools create {0}".format(node_pool)
-        gcloud_parameters = {"cluster": cluster, "num-nodes" : configuration["number_of_brokers"], "disk-size": configuration["disk_size"], "disk-type": configuration["disk_type"], "machine-type": configuration["machine_type"], "service-account": SERVICE_ACCOUNT_EMAIL, "local-ssd-count": 1, "max-nodes": 7, "min-nodes": 3, "node-labels": "kafka-broker-node=true", "tags": "kafka-broker-node"}
+
+        # "service-account": SERVICE_ACCOUNT_EMAIL,
+        gcloud_parameters = {"cluster": cluster, "num-nodes": configuration["number_of_brokers"],
+                             "disk-size": configuration["disk_size"], "disk-type": configuration["disk_type"],
+                             "machine-type": configuration["machine_type"], "local-ssd-count": 1, "max-nodes": 7,
+                             "min-nodes": 3, "node-labels": "kafka-broker-node=true", "tags": "kafka-broker-node",
+                             "local-ssd-volumes": "count=1,type=nvme,format=fs"}
 
         # Format the local SSD (using an alpha feature)
         # see https://cloud.google.com/sdk/gcloud/reference/alpha/container/node-pools/create#--local-ssd-volumes
-        gcloud_parameters["local-ssd-volumes"] = "count=1,type=nvme,format=fs"
 
         self.run_gcloud_command(gcloud_command, gcloud_parameters, alpha=True)
 
