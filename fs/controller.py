@@ -570,7 +570,7 @@ class Controller:
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
     def provision_node_pools(self, configuration):
-        self.__log.info("Provisioning node pool.")
+        self.__log.info("Provisioning node pools...")
 
         # provision using gcloud, not terraform
         self.provision_kafka_broker_nodes(configuration)
@@ -581,18 +581,22 @@ class Controller:
         self.__log.info("Node pools provisioned.")
 
     def unprovision_node_pools(self):
+        """
+        Unprovision via gcloud
+
+        :return:
+        """
         self.__log.info(f"Unprovision node pools...")
 
-        # unprovision via gcloud
         cluster = "gke-kafka-cluster"
         node_pool = "kafka-node-pool"
         gcloud_command = "container node-pools delete {0}".format(node_pool)
-        gcloud_parameters = {}
+        gcloud_parameters = {"cluster": cluster}
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
         node_pool = "zk-node-pool"
         gcloud_command = "container node-pools delete {0}".format(node_pool)
-        gcloud_parameters = {}
+        gcloud_parameters = {"cluster": cluster}
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
         self.__log.info("Node pools unprovisioned.")
