@@ -513,10 +513,11 @@ class Controller:
 
     def run_gcloud_command(self, command, parameters, alpha=False, execute=True):
         if alpha:
-            gcloud_command = "gcloud alpha "
+            gcloud_command = "gcloud alpha " + command
         else:
-            gcloud_command = "gcloud "
+            gcloud_command = "gcloud " + command
 
+        # add "--key=value" parameters to the command
         for key in parameters:
             gcloud_command += "--" + key + "=" + str(parameters[key]) + " "
 
