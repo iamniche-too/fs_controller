@@ -164,7 +164,7 @@ class Controller:
 
         # finally take down the kafka node pool
         if configuration["teardown_broker_nodes"]:
-          self.unprovision_node_pool(configuration)
+          self.unprovision_node_pools()
         else:
           self.__log.info("Broker nodes left standing.")
 
@@ -521,7 +521,7 @@ class Controller:
         for key in parameters:
             gcloud_command += "--" + key + "=" + str(parameters[key]) + " "
 
-        self.__log.info(f"Executing command {gcloud_command}...")
+        self.__log.info(f"Executing command: {gcloud_command}...")
 
         if execute:
             output = subprocess.check_output(gcloud_command, shell=True)
@@ -580,11 +580,21 @@ class Controller:
 
         self.__log.info("Node pools provisioned.")
 
-    def unprovision_node_pool(self, configuration):
-        self.__log.info(f"Unprovisioning node pool: {configuration}")
-        filename = "./unprovision.sh"
-        args = [filename]
-        self.bash_command_with_wait(args, TERRAFORM_DIR)
-        self.__log.info("Node pool unprovisioned.")
+    def unprovision_node_pools(self):
+        self.__log.info(f"Unprovision node pools...")
+
+        # unprovision via gcloud
+        cluster = "gke-kafka-cluster"
+        node_pool = "kafka-node-pool"
+        gcloud_command = "container node-pools delete {0}".format(node_pool)
+        gcloud_parameters = {}
+        self.run_gcloud_command(gcloud_command, gcloud_parameters)
+
+        node_pool = "zk-node-pool"
+        gcloud_command = "container node-pools delete {0}".format(node_pool)
+        gcloud_parameters = {}
+        self.run_gcloud_command(gcloud_command, gcloud_parameters)
+
+        self.__log.info("Node pools unprovisioned.")
 
 
