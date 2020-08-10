@@ -32,7 +32,7 @@ class Controller:
         # 5 brokers, 3 ZK
         self.configuration_template = {"number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1,
                                   "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 60,
-                                  "machine_size": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
+                                  "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
                                   "ignore_throughput_threshold": False, "teardown_broker_nodes": True, "replication_factor": 1, "num_zk": 1}
 
         # default the number of partitions
@@ -511,12 +511,45 @@ class Controller:
 
         return configurations
 
+    def run_gcloud_command(self, command, parameters, alpha=False, execute=True):
+        if alpha:
+            gcloud_command = "gcloud alpha "
+        else:
+            gcloud_command = "gcloud "
+
+        for key in parameters:
+            gcloud_command += "--" + key + "=" + str(parameters[key]) + " "
+
+        self.__log.info(f"Executing command {gcloud_command}...")
+
+        if execute:
+            output = subprocess.check_output(gcloud_command, shell=True)
+        else:
+            output = gcloud_command
+
+        self.__log.info(output)
+
+        return output
+
+    def provision_kafka_broker_nodes(self, configuration):
+        self.__log.info("1. Provisioning Kafka broker node pool.")
+        # Note --local-ssd-volumes has been *added* to gcloud alpha container node-pools create
+        # see https://cloud.google.com/sdk/gcloud/reference/alpha/container/node-pools/create#--local-ssd-volumes
+        cluster = "gke-kafka-cluster"
+        node_pool = "kafka-node-pool"
+        gcloud_command = "container node-pools create {0}".format(node_pool)
+        gcloud_parameters = {"cluster": cluster, "num-nodes" : configuration["number_of_brokers"], "disk-size": configuration["disk_size"], "disk-type": configuration["disk_type"], "machine-type": configuration["machine_type"], "service-account": SERVICE_ACCOUNT_EMAIL, "local-ssd-count": 1, "max-nodes": 7, "min-nodes": 3, "node-labels": "kafka-broker-node=true", "tags": "kafka-broker-node"}
+
+        # Format the local SSD (using an alpha feature)
+        # see https://cloud.google.com/sdk/gcloud/reference/alpha/container/node-pools/create#--local-ssd-volumes
+        gcloud_parameters["local-ssd-volumes"] = "count=1,type=nvme,format=fs"
+
+        self.run_gcloud_command(gcloud_command, gcloud_parameters, alpha=True)
+
     def provision_node_pool(self, configuration):
         self.__log.info("1. Provisioning node pool.")
 
-        filename = "./generate-kafka-node-pool.sh"
-        args = [filename, SERVICE_ACCOUNT_EMAIL, configuration["machine_size"], configuration["disk_type"], str(configuration["disk_size"]), str(configuration["number_of_brokers"])]
-        self.bash_command_with_wait(args, TERRAFORM_DIR)
+        self.provision_kafka_broker_nodes()
 
         filename = "./generate-zk-node-pool.sh"
         args = [filename, SERVICE_ACCOUNT_EMAIL]

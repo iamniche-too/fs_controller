@@ -18,6 +18,27 @@ class TestController(unittest.TestCase):
     def tearDown(self):
         self.queue.close()
 
+    def test_run_gcloud_command(self):
+        configuration = {"number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1,
+                                       "max_producer_count": 16, "num_consumers": 1,
+                                       "producer_increment_interval_sec": 60,
+                                       "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd",
+                                       "consumer_throughput_reporting_interval": 5,
+                                       "ignore_throughput_threshold": False, "teardown_broker_nodes": True,
+                                       "replication_factor": 1, "num_zk": 1}
+
+        cluster = "gke-kafka-cluster"
+        node_pool = "kafka-node-pool"
+        gcloud_command = "container node-pools create {0}".format(node_pool)
+        gcloud_parameters = {"cluster": cluster, "num-nodes": configuration["number_of_brokers"],
+                         "disk-size": configuration["disk_size"], "disk-type": configuration["disk_type"],
+                         "machine-type": configuration["machine_type"], "service-account": "test@test.com",
+                         "local-ssd-count": 1, "max-nodes": 7, "min-nodes": 3, "node-labels": "kafka-broker-node=true",
+                         "tags": "kafka-broker-node"}
+        # gcloud_parameters["local-ssd-volumes"] = "count=1,type=nvme,format=fs"
+        executed_command = self.controller.run_gcloud_command(gcloud_command, gcloud_parameters, execute=False)
+        self.assertEqual("gcloud --cluster=gke-kafka-cluster --num-nodes=3 --disk-size=100 --disk-type=pd-ssd --machine-type=n1-standard-8 --service-account=test@test.com --local-ssd-count=1 --max-nodes=7 --min-nodes=3 --node-labels=kafka-broker-node=true --tags=kafka-broker-node ", executed_command)
+
     def test_run_soak_test(self):
         self.controller.flush_consumer_throughput_queue()
 
