@@ -539,9 +539,10 @@ class Controller:
         gcloud_command = "container node-pools create {0}".format(node_pool)
 
         # "service-account": SERVICE_ACCOUNT_EMAIL,
+        # "local-ssd-count": 1,
         gcloud_parameters = {"cluster": cluster, "num-nodes": configuration["number_of_brokers"],
                              "disk-size": configuration["disk_size"], "disk-type": configuration["disk_type"],
-                             "machine-type": configuration["machine_type"], "local-ssd-count": 1, "max-nodes": 7,
+                             "machine-type": configuration["machine_type"], "max-nodes": 7,
                              "min-nodes": 3, "node-labels": "kafka-broker-node=true", "tags": "kafka-broker-node",
                              "local-ssd-volumes": "count=1,type=nvme,format=fs"}
 
