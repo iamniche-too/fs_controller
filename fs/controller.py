@@ -11,8 +11,8 @@ import uuid
 from fs.stress_test_process import StressTestProcess
 from fs.soak_test_process import SoakTestProcess
 from fs.utils import SCRIPT_DIR, PRODUCER_CONSUMER_NAMESPACE, KAFKA_NAMESPACE, KAFKA_DEPLOY_DIR, BURROW_DIR, \
-    PRODUCERS_CONSUMERS_DEPLOY_DIR, CLUSTER_NAME, CLUSTER_ZONE, TERRAFORM_DIR, SERVICE_ACCOUNT_EMAIL, \
-    ENDPOINT_URL, addlogger, MONITORING_DIR
+    PRODUCERS_CONSUMERS_DEPLOY_DIR, CLUSTER_NAME, CLUSTER_ZONE, SERVICE_ACCOUNT_EMAIL, \
+    ENDPOINT_URL, addlogger, MONITORING_DIR, LOCAL_PROVISIONER_DEPLOY_DIR
 
 stop_threads = False
 
@@ -532,6 +532,16 @@ class Controller:
 
         return output
 
+    def deploy_local_ssd_provisioner(self):
+        self.__log.info(f"Deploying local SSD provisioner...")
+
+        # TODO - cluster name is currently hard-coded within deploy.sh
+        filename = "./deploy.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, LOCAL_PROVISIONER_DEPLOY_DIR)
+
+        self.__log.info(f"Deployed local SSD provisioner.")
+
     def provision_kafka_broker_nodes(self, configuration, alpha=False):
         self.__log.info("Provisioning Kafka broker node pool.")
 
@@ -553,6 +563,9 @@ class Controller:
             gcloud_parameters["local-ssd-count"] = 1
 
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
+
+        # deploy the local ssd provisioner
+        self.deploy_local_ssd_provisioner()
 
     def provision_zk_nodes(self, configuration):
         self.__log.info("Provisioning ZK node pool.")
