@@ -554,6 +554,11 @@ class Controller:
         args = [filename]
         self.bash_command_with_wait(args, LOCAL_PROVISIONER_DEPLOY_DIR)
 
+        # need to also remove the PVs in state "Released"
+        filename = "./delete-pvs.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, LOCAL_PROVISIONER_DEPLOY_DIR)
+
         self.__log.info(f"Undeployed local SSD provisioner.")
 
     def provision_kafka_broker_nodes(self, configuration, alpha=False):
