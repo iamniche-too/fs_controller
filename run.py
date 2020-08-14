@@ -1,6 +1,6 @@
 import argparse
 import greenstalk
-from fs.default_controller import DefaultController
+from fs.default_controller import DebugController
 from fs.message_size_controller import MessageSizeController
 from fs.partition_count_controller import PartitionCountController
 from fs.replication_factor_controller import ReplicationFactorController
@@ -54,9 +54,9 @@ def run():
         c.flush_consumer_throughput_queue()
         c.run()
         return
-    elif args.controller == "default":
-        print("Starting Default Controller")
-        c = DefaultController(consumer_throughput_queue)
+    elif args.controller == "debug":
+        print("Starting Debug Controller")
+        c = DebugController(consumer_throughput_queue)
         c.flush_consumer_throughput_queue()
         c.run()
         return

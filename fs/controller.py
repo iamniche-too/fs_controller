@@ -448,6 +448,9 @@ class Controller:
     def get_stress_test_process(self, configuration, queue):
         return StressTestProcess(configuration, queue)
 
+    def post_stress_test_hook(self):
+        pass
+
     def run_stress_test(self, configuration, queue):
         self.__log.info(f"Running stress test.")
 
@@ -459,8 +462,13 @@ class Controller:
 
         self.__log.info(f"Stress test completed.")
 
+        self.post_stress_test_hook()
+
     def get_soak_test_process(self, configuration, queue):
         return SoakTestProcess(configuration, queue)
+
+    def post_soak_test_hook(self):
+        pass
 
     def run_soak_test(self, configuration, queue):
         self.__log.info(f"Running soak test.")
@@ -474,6 +482,8 @@ class Controller:
         self.soak_test_process.join()
 
         self.__log.info(f"Soak test completed.")
+
+        self.post_soak_test_hook()
 
     def run_configuration(self, configuration):
         self.__log.info(f"Running configuration: {configuration}")
