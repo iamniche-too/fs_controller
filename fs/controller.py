@@ -366,6 +366,9 @@ class Controller:
         args = [filename, cluster_name, cluster_zone]
         self.bash_command_with_wait(args, SCRIPT_DIR)
 
+    def post_broker_timeout_hook(self):
+        pass
+
     def setup_configuration(self, configuration):
         self.__log.info(f"Setup configuration: {configuration}")
 
@@ -392,6 +395,7 @@ class Controller:
         all_ok = self.check_brokers_ok(configuration)
         if not all_ok:
             self.__log.info("Aborting configuration - brokers not ok.")
+            self.post_broker_timeout_hook()
             return False
 
         # deploy producers/consumers
@@ -613,7 +617,7 @@ class Controller:
 
         # also provision using gcloud, not terraform
         self.provision_zk_nodes(configuration)
-        
+
         self.__log.info("Node pools provisioned.")
 
         # hook for doing something custom at this point

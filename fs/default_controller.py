@@ -7,8 +7,8 @@ from fs.utils import addlogger
 @addlogger
 class DefaultController(Controller):
 
-    def post_provision_node_pools_hook(self):
-        input("Nodes provisioned. Press any key to continue the setup...")
+    def post_broker_timeout_hook(self):
+        input("Something went wrong with the broker deployment. Press any key to continue...")
 
     def post_setup_hook(self):
         """
