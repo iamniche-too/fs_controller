@@ -519,7 +519,11 @@ class Controller:
 
         # add "--key=value" parameters to the command
         for key in parameters:
-            gcloud_command += "--" + key + "=" + str(parameters[key]) + " "
+            if key == "quiet":
+                # key only, no value
+                gcloud_command += "--" + key + " "
+            else:
+                gcloud_command += "--" + key + "=" + str(parameters[key]) + " "
 
         self.__log.info(f"Executing command: {gcloud_command}...")
 
