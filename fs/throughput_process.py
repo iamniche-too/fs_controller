@@ -66,7 +66,9 @@ class ThroughputProcess(BaseProcess):
 
         # Avoid low throughput on producer # change?
         if self.discard_initial_values:
-            if self.throughput_count > 2:
+            # discard 2 * number of consumers
+            # since otherwise each consumer may not have stabilised
+            if self.throughput_count > (2 * self.configuration["num_consumers"]):
                 # append throughput to specific list (as keyed by num_producers)
                 self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
 
