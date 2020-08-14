@@ -545,6 +545,10 @@ class Controller:
     def provision_kafka_broker_nodes(self, configuration, alpha=False):
         self.__log.info("Provisioning Kafka broker node pool.")
 
+        # deploy the local ssd provisioner
+        # note - must come first so that PVs are created when node is provisioned
+        self.deploy_local_ssd_provisioner()
+
         cluster = "gke-kafka-cluster"
         node_pool = "kafka-node-pool"
         gcloud_command = "container node-pools create {0}".format(node_pool)
@@ -563,9 +567,6 @@ class Controller:
             gcloud_parameters["local-ssd-count"] = 1
 
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
-
-        # deploy the local ssd provisioner
-        self.deploy_local_ssd_provisioner()
 
     def provision_zk_nodes(self, configuration):
         self.__log.info("Provisioning ZK node pool.")
