@@ -1,6 +1,6 @@
 import argparse
 import greenstalk
-from fs.default_controller import DebugController
+from fs.debug_controller import DebugController
 from fs.message_size_controller import MessageSizeController
 from fs.partition_count_controller import PartitionCountController
 from fs.replication_factor_controller import ReplicationFactorController
