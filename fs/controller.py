@@ -31,7 +31,7 @@ class Controller:
         # template configuration
         # 5 brokers, 3 ZK
         self.configuration_template = {"number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1,
-                                  "max_producer_count": 16, "num_consumers": 1, "producer_increment_interval_sec": 60,
+                                  "max_producer_count": 26, "num_consumers": 1, "producer_increment_interval_sec": 60,
                                   "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
                                   "ignore_throughput_threshold": False, "teardown_broker_nodes": True, "replication_factor": 1, "num_zk": 1}
 

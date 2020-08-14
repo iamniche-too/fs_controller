@@ -9,16 +9,16 @@ class DebugController(Controller):
     """
     Debug controller with hooks to prompt for input to continue after each stage
     """
-
     def post_broker_timeout_hook(self):
-        input("Press any key to continue...")
+        # input("Press any key to continue...")
+        pass
 
     def post_stress_test_hook(self):
-        input("Press any key to continue...")
+        # input("Press any key to continue...")
         pass
 
     def post_soak_test_hook(self):
-        input("Press any key to continue...")
+        # input("Press any key to continue...")
         pass
 
     def post_setup_hook(self):
@@ -27,7 +27,8 @@ class DebugController(Controller):
         i.e. we can pause with Kafka brokers running at this point
         :return:
         """
-        input("Press any key to continue...")
+        # input("Press any key to continue...")
+        pass
 
     def get_configuration_description(self):
         return "Default test"
@@ -42,9 +43,11 @@ class DebugController(Controller):
 
         broker_count = self.configuration_template["number_of_brokers"]
         
-        d = {"run_uid": self.run_uid, "start_producer_count": (broker_count*2)-1, "num_consumers": 3}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "run_uid": self.run_uid, "start_producer_count": (broker_count*2)-1, "num_consumers": 3}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template))
+
+        configurations = [template]
+        self.configurations.extend(configurations)
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
