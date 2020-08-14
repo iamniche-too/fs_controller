@@ -87,7 +87,7 @@ class StressTestProcess(ThroughputProcess):
                 "stress_expected_throughput_gbps": str(throughput_gbps),
                 "stress_min_throughput": str(self.min_throughput*8/1000),
                 "stress_max_throughput": str(self.max_throughput*8/1000)}
-        self.__log.info("Stress test stats: {json}")
+        self.__log.info(f"Stress test stats: {json}")
         self.write_metrics(self.configuration, json)
 
         self.__log.info("Completed.")
