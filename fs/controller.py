@@ -602,6 +602,9 @@ class Controller:
 
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
 
+    def post_provision_node_pools_hook(self):
+        pass
+
     def provision_node_pools(self, configuration):
         self.__log.info("Provisioning node pools...")
 
@@ -610,8 +613,11 @@ class Controller:
 
         # also provision using gcloud, not terraform
         self.provision_zk_nodes(configuration)
-
+        
         self.__log.info("Node pools provisioned.")
+
+        # hook for doing something custom at this point
+        self.post_provision_node_pools_hook()
 
     def unprovision_node_pools(self):
         """

@@ -7,6 +7,9 @@ from fs.utils import addlogger
 @addlogger
 class DefaultController(Controller):
 
+    def post_provision_node_pools_hook(self):
+        input("Nodes provisioned. Press any key to continue the setup...")
+
     def post_setup_hook(self):
         """
         After setup, wait for key inout to continue
