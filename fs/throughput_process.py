@@ -37,6 +37,10 @@ class ThroughputProcess(BaseProcess):
         if self.previous_producer_count != actual_producer_count:
             self.__log.info(f"Producer change detected: previous {self.previous_producer_count}, current {actual_producer_count} - resetting thresholds.")
             self.threshold_exceeded[consumer_id] = 0
+
+            # discard the initial values for this producer #
+            self.throughput_count = 0
+
         self.previous_producer_count = actual_producer_count
         return actual_producer_count
 
@@ -60,9 +64,9 @@ class ThroughputProcess(BaseProcess):
             self.__log.info(f"num_producers {num_producers} != self.desired_producer_count {self.desired_producer_count}, producer not started/stopped yet? Discarding the data...")
             return False
 
-        # only append to list if it is not an initial value (avoids low throughput when starting up)
+        # Avoid low throughput on producer # change?
         if self.discard_initial_values:
-            if self.throughput_count > 4:
+            if self.throughput_count > 2:
                 # append throughput to specific list (as keyed by num_producers)
                 self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
 
@@ -73,7 +77,7 @@ class ThroughputProcess(BaseProcess):
                 if throughput > self.max_throughput:
                     self.max_throughput = throughput
             else:
-                self.__log.info("Discarding initial throughput value...")
+                self.__log.info("Discarding throughput value...")
                 self.throughput_count += 1
         else:
             # append throughput to specific list (as keyed by num_producers)
