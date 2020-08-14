@@ -546,6 +546,16 @@ class Controller:
 
         self.__log.info(f"Deployed local SSD provisioner.")
 
+    def undeploy_local_ssd_provisioner(self):
+        self.__log.info(f"Undeploying local SSD provisioner...")
+
+        # TODO - cluster name is currently hard-coded within deploy.sh
+        filename = "./undeploy.sh"
+        args = [filename]
+        self.bash_command_with_wait(args, LOCAL_PROVISIONER_DEPLOY_DIR)
+
+        self.__log.info(f"Undeployed local SSD provisioner.")
+
     def provision_kafka_broker_nodes(self, configuration, alpha=False):
         self.__log.info("Provisioning Kafka broker node pool.")
 
@@ -611,6 +621,9 @@ class Controller:
         gcloud_command = "container node-pools delete {0}".format(node_pool)
         gcloud_parameters = {"cluster": cluster, "quiet": True}
         self.run_gcloud_command(gcloud_command, gcloud_parameters)
+
+        # undeploy the local ssd provisioner
+        self.undeploy_local_ssd_provisioner()
 
         node_pool = "zk-node-pool"
         gcloud_command = "container node-pools delete {0}".format(node_pool)
