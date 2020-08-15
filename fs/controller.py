@@ -398,15 +398,13 @@ class Controller:
             self.post_broker_timeout_hook()
             return False
 
-        # deploy producers/consumers
-        self.k8s_deploy_producers_consumers()
-
         # deploy burrow
         self.k8s_deploy_burrow()
 
-        # deploy the monitoring (prometheus/grafana)
-        # Note - monitoring is manual deployed to avoid change in external IP
-        # self.k8s_deploy_monitoring()
+        # Note - monitoring is manually deployed to avoid change in external IP
+
+        # deploy producers/consumers
+        self.k8s_deploy_producers_consumers()
 
         # scale consumers
         self.k8s_scale_consumers(str(configuration["num_consumers"]))
