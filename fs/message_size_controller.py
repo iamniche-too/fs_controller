@@ -27,17 +27,17 @@ class MessageSizeController(Controller):
         # override the message size
         d = {"run_uid": self.run_uid, "message_size_kb": 75, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count+1))
+        self.configurations.extend(self.get_configurations(template, max_num_consumers=broker_count+1))
 
         # override the message size
         d = {"run_uid": self.run_uid, "message_size_kb": 750, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count+1))
+        self.configurations.extend(self.get_configurations(template, max_num_consumers=broker_count+1))
 
         # override the message size
         d = {"run_uid": self.run_uid, "message_size_kb": 7500, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count+1))
+        self.configurations.extend(self.get_configurations(template, max_num_consumers=broker_count+1))
 
     def get_soak_test_process(self, configuration, queue):
         """
