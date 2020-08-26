@@ -51,10 +51,9 @@ class Controller:
     def configure_logging(self):
         # log directory
         base_directory = os.path.dirname(os.path.abspath(__file__))
-        now = datetime.now()
         
-        # path is of the form ~/../log/2020-20-07/run_AD56F8
-        base_path = os.path.join(base_directory, "..", "log", now.strftime("%Y-%m-%d"), self.run_uid)
+        # path is of the form ~/../log/run_AD56F8
+        base_path = os.path.join(base_directory, "..", "log", self.run_uid)
 
         if not os.path.exists(base_path):
             os.makedirs(base_path)
