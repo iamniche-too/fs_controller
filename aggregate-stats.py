@@ -4,8 +4,8 @@ import os
 
 from fs.read_write_jsonl_mixin import ReadWriteJSONLMixin
 
-# TODO - move to command line parameter
-INCLUDED_RUN_UIDS = ["D2287F", "CEFABA", "6904B2"]
+# TODO - think abou tthis a bit more: move to command line parameter or remove?
+INCLUDED_RUN_UIDS = ["816229", "AFD15B", "C69AD1"]
 
 
 class AggregateStats(ReadWriteJSONLMixin):
@@ -34,6 +34,7 @@ class AggregateStats(ReadWriteJSONLMixin):
             print(f"Found run_uid: {run_uid}")
 
             if run_uid[4:] in INCLUDED_RUN_UIDS:
+                print(f"Processing run_uid: {run_uid}")
                 self.parse_files_per_run(self.path, run_uid)
             else:
                 print(f"Ignoring run_uid {run_uid}")
@@ -42,7 +43,7 @@ class AggregateStats(ReadWriteJSONLMixin):
         file_list = [file_path for file_path in glob.glob(path, recursive=True)]
         return file_list
 
-    def parse_files_per_run(self, path, run_uid, first_entry=False):
+    def parse_files_per_run(self, path, run_uid):
         # get the list of files
         file_list = self.get_metrics_files_per_run(path, run_uid)
         print(f"Found {len(file_list)} files for run_uid {run_uid}.")
@@ -66,16 +67,11 @@ class AggregateStats(ReadWriteJSONLMixin):
             if len(data) == 2:
                 # merge to a single dict
                 single_dict_per_file = dict(data[0], **data[1])
-            elif len(data) == 1:
-                # missing one of the metrics
-                # TODO - rationalise which one is missing and patch the data?
-                single_dict_per_file = dict(data[0])
             else:
-                print("Warning: >2 data rows in file {file}")
+                print(f"Warning: Expected 2 rows, but actually <>2 rows in file {file}")
                 continue
 
-            print(single_dict_per_file)
-
+            # print(single_dict_per_file)
             results.append(single_dict_per_file)
 
         output_file = os.path.join(self.output_directory, "{0}_results.csv".format(run_uid))

@@ -53,3 +53,20 @@ pipenv shell
 pipenv install --dev
 ./run.sh
 ```
+
+# Aggregate the results
+
+1) Sync the GCP bucket (to /log directory) to ensure that all data is present and correct
+2) Remove any unwanted directories from /log directory
+3) Remove any unwanted results files from /results directory
+4) Configure aggregate-stats.py with the required run uids (line 8)
+5) Run the aggregate stats from the command line
+```shell script
+./aggregate-stats.sh
+``` 
+6) Look for any warnings of <>2 rows in files (would indicate a problem with the run)
+
+E.g. Warning: Expected 2 rows, but actually <>2 rows in file .../fs_controller/log/run_816229/20204E_metrics_5.csv
+
+7) Open up the results/results.csv file and load into your favourite editor
+

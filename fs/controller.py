@@ -527,7 +527,7 @@ class Controller:
         configurations = []
 
         # zero offset
-        for num_consumers in range(1, broker_count*3, step=broker_count):
+        for num_consumers in range(1, broker_count*3, broker_count):
             d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
             configurations.append(dict(template, **d))
 
