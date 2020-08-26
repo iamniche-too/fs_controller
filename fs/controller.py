@@ -505,8 +505,11 @@ class Controller:
 
     def upload_metrics(self, configuration):
         base_directory = os.path.dirname(os.path.abspath(__file__))
-        base_path = os.path.join(base_directory, "..", "log", self.now.strftime("%Y-%m-%d"),
-                                 configuration["run_uid"])
+
+        # TODO - base path should be gleaned from BaseProcess self.base_path
+        # Note - date not included in path (to avoid data split directories over midnight boundaries)
+        base_path = os.path.join(base_directory, "..", "log", configuration["run_uid"])
+
         self.__log.info(f"Uploading metrics from {base_path} to gs://kafka-trial-data")
         os.system(f"gsutil cp -r '{base_path}' gs://kafka-trial-data")
         self.__log.info("Uploaded.")
@@ -520,11 +523,11 @@ class Controller:
     def get_configuration_description(self):
         raise NotImplementedError("Please use a sub-class to implement the configuration description")
 
-    def get_configurations(self, template, max_num_consumers=1):
+    def get_configurations(self, template, broker_count):
         configurations = []
 
         # zero offset
-        for num_consumers in range(1, max_num_consumers+1):
+        for num_consumers in range(1, broker_count*3, step=broker_count):
             d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
             configurations.append(dict(template, **d))
 

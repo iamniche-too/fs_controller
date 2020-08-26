@@ -16,10 +16,10 @@ class BaseProcess(StoppableProcess, ReadWriteJSONLMixin):
         super().__init__(*args, **kwargs)
         self.configuration = configuration
         self.base_directory = os.path.dirname(os.path.abspath(__file__))
-        self.now = datetime.now()
 
-        self.base_path = os.path.join(self.base_directory, "..", "log", self.now.strftime("%Y-%m-%d"),
-                                 configuration["run_uid"])
+        # note - do not include the date in the path
+        # (so as to avoid "midnight boundaries" and therefore data split over multiple files...)
+        self.base_path = os.path.join(self.base_directory, "..", "log", configuration["run_uid"])
 
         # create path if not exist
         if not os.path.exists(self.base_path):

@@ -26,31 +26,31 @@ class ReplicationFactorController(Controller):
         # override the replication factor
         d = {"run_uid": self.run_uid, "replication_factor": 1, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count+1))
+        self.configurations.extend(self.get_configurations(template, broker_count))
 
         #if broker_count >= 2:
         #    # override the replication factor
         #    d = {"run_uid": self.run_uid, "replication_factor": 2, "start_producer_count": broker_count-1}
         #    template = dict(self.configuration_template, **d)
-        #    self.configurations.extend(self.get_configurations(template, broker_count+1))
+        #    self.configurations.extend(self.get_configurations(template, broker_count))
 
         if broker_count >= 3:
             # override the replication factor
             d = {"run_uid": self.run_uid, "replication_factor": 3, "start_producer_count": 1}
             template = dict(self.configuration_template, **d)
-            self.configurations.extend(self.get_configurations(template, broker_count+1))
+            self.configurations.extend(self.get_configurations(template, broker_count))
 
         #if broker_count >= 4:
         #    # override the replication factor
         #    d = {"run_uid": self.run_uid, "replication_factor": 4, "start_producer_count": 1}
         #    template = dict(self.configuration_template, **d)
-        #    self.configurations.extend(self.get_configurations(template, broker_count + 1))
+        #    self.configurations.extend(self.get_configurations(template, broker_count))
 
         if broker_count >= 5:
             # override the replication factor
             d = {"run_uid": self.run_uid, "replication_factor": 5, "start_producer_count": 1}
             template = dict(self.configuration_template, **d)
-            self.configurations.extend(self.get_configurations(template, broker_count + 1))
+            self.configurations.extend(self.get_configurations(template, broker_count))
 
     def get_soak_test_process(self, configuration, queue):
         """

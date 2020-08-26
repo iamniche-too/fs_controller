@@ -27,25 +27,19 @@ class PartitionCountController(Controller):
         d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 1,
              "start_producer_count": (broker_count * 2) - 1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count + 1))
+        self.configurations.extend(self.get_configurations(template, broker_count))
 
         # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 2,
+        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 5,
              "start_producer_count": (broker_count * 2) - 1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count + 1))
+        self.configurations.extend(self.get_configurations(template, broker_count))
 
         # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 4,
+        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 10,
              "start_producer_count": (broker_count * 2) - 1}
         template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count + 1))
-
-        # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 8,
-             "start_producer_count": (broker_count * 2) - 1}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count + 1))
+        self.configurations.extend(self.get_configurations(template, broker_count))
 
     def get_soak_test_process(self, configuration, queue):
         """
