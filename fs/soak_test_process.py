@@ -1,6 +1,6 @@
 import time
 from statistics import mean
-from fs.utils import DEFAULT_THROUGHPUT_MB_S, addlogger, SEVENTY_FIVE_MBPS_IN_GBPS
+from fs.utils import addlogger, SEVENTY_FIVE_MBPS_IN_GBPS
 
 # A 21GB pagefile can cache:
 # 168Gb / (0.59 * p / n) == 285 * n / p seconds of data.
@@ -65,7 +65,7 @@ class SoakTestProcess(ThroughputProcess):
         # above threshold, reset the threshold events
         # (as they must be consecutive to stop the thread)
         self.__log.info(
-            f"Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
+            f"Consumer {consumer_id} average throughput ok, expected {SEVENTY_FIVE_MBPS_IN_GBPS * actual_producer_count}")
         self.threshold_exceeded[consumer_id] = 0
 
         # Check each consumer to see if we are stable
@@ -125,14 +125,15 @@ class SoakTestProcess(ThroughputProcess):
                 continue
 
             consumer_id = data["consumer_id"]
-            throughput = data["throughput"]
+            throughput_in_mbps = data["throughput"]
+            throughput_in_gbps = (throughput_in_mbps * 8) / 1000
             num_producers = data["producer_count"]
 
             # store the num_producers
             if self.num_producers == 0:
                 self.num_producers = num_producers
 
-            self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+            self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput_in_gbps)
             consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)][-5:])
 
             self.consumer_throughput_averages.append(consumer_throughput_average)
@@ -144,7 +145,7 @@ class SoakTestProcess(ThroughputProcess):
                 self.max_throughput = consumer_throughput_average
 
             self.__log.info(
-                f"{run_time_ms:.2f}s of {soak_test_ms:.2f}s Consumer {consumer_id} throughput (average) {consumer_throughput_average}, expected {DEFAULT_THROUGHPUT_MB_S * num_producers}")
+                f"{run_time_ms:.2f}s of {soak_test_ms:.2f}s Consumer {consumer_id} throughput (average) {consumer_throughput_average}, expected {SEVENTY_FIVE_MBPS_IN_GBPS * num_producers}")
 
             # update the timings
             run_time_ms = time.time() - start_time_ms
@@ -160,9 +161,9 @@ class SoakTestProcess(ThroughputProcess):
                 "configuration_uid": self.configuration["configuration_uid"],
                 "soak_num_producers": str(self.num_producers),
                 "soak_expected_throughput_gbps": str(num_producers * SEVENTY_FIVE_MBPS_IN_GBPS),
-                "soak_min_throughput": str(self.min_throughput * 8 / 1000),
-                "soak_max_throughput": str(self.max_throughput * 8 / 1000),
-                "soak_average_throughput": str(average_throughput * 8 / 1000)}
+                "soak_min_throughput": str(self.min_throughput),
+                "soak_max_throughput": str(self.max_throughput),
+                "soak_average_throughput": str(average_throughput)}
         self.__log.info(f"Soak test stats: {json}")
         self.write_metrics(self.configuration, json)
 

@@ -1,6 +1,6 @@
 import time
 from fs.throughput_process import ThroughputProcess
-from fs.utils import DEFAULT_THROUGHPUT_MB_S, addlogger, SEVENTY_FIVE_MBPS_IN_GBPS
+from fs.utils import addlogger, SEVENTY_FIVE_MBPS_IN_GBPS
 
 
 @addlogger
@@ -80,13 +80,12 @@ class StressTestProcess(ThroughputProcess):
             self.k8s_scale_producers(actual_producer_count)
 
         # write out the key metrics as JSON
-        throughput_gbps = actual_producer_count * SEVENTY_FIVE_MBPS_IN_GBPS
         json = {"run_uid": self.configuration["run_uid"],
                 "configuration_uid": self.configuration["configuration_uid"],
                 "stress_max_producers": str(actual_producer_count),
-                "stress_expected_throughput_gbps": str(throughput_gbps),
-                "stress_min_throughput": str(self.min_throughput*8/1000),
-                "stress_max_throughput": str(self.max_throughput*8/1000)}
+                "stress_expected_throughput_gbps": str(actual_producer_count * SEVENTY_FIVE_MBPS_IN_GBPS),
+                "stress_min_throughput": str(self.min_throughput),
+                "stress_max_throughput": str(self.max_throughput)}
         self.__log.info(f"Stress test stats: {json}")
         self.write_metrics(self.configuration, json)
 
