@@ -30,13 +30,20 @@ class Controller:
 
         # template configuration
         # 5 brokers, 3 ZK
-        self.configuration_template = {"number_of_brokers": 3, "message_size_kb": 750, "start_producer_count": 1,
-                                  "max_producer_count": 26, "num_consumers": 1, "producer_increment_interval_sec": 60,
-                                  "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd", "consumer_throughput_reporting_interval": 5,
-                                  "ignore_throughput_threshold": False, "teardown_broker_nodes": True, "replication_factor": 1, "num_zk": 1}
+        self.configuration_template = {"number_of_brokers": 3, "start_producer_count": 1, "max_producer_count": 26,
+                                       "num_consumers": 1, "producer_increment_interval_sec": 60,
+                                       "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd",
+                                       "consumer_throughput_reporting_interval": 5,
+                                       "ignore_throughput_threshold": False, "teardown_broker_nodes": True,
+                                       "replication_factor": 1, "num_zk": 1}
 
+        # TODO - this needs more thought as MAX(#Consumers,#Producers) may be > brokers * 3
         # default the number of partitions
         self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
+
+        # TODO - this needs more thought as may not be the optimal message size
+        # default message size
+        self.configuration_template["message_size_kb"] = 750
 
         self.run_uid = "run_" + self.get_uid()
         self.configure_logging()

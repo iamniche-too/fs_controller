@@ -2,7 +2,7 @@ from collections import defaultdict
 from statistics import mean
 
 from fs.base_process import BaseProcess
-from fs.utils import DEFAULT_THROUGHPUT_MB_S, DEFAULT_CONSUMER_TOLERANCE, addlogger
+from fs.utils import SEVENTY_FIVE_MBPS_IN_GBPS, DEFAULT_CONSUMER_TOLERANCE, addlogger
 
 INITIAL_WINDOW_SIZE = 10
 
@@ -50,14 +50,15 @@ class ThroughputProcess(BaseProcess):
             return False
 
         consumer_id = data["consumer_id"]
-        throughput = data["throughput"]
+        throughput_in_mbps = data["throughput"]
+        throughput_in_gbps = (throughput_in_mbps * 8) / 1000
         num_producers = data["producer_count"]
 
         # reset thresholds only if the producer count has changed
         # i.e. if a new producer has just started
         self.reset_thresholds(consumer_id)
 
-        self.__log.info(f"Consumer {consumer_id}, throughput {throughput}, num_producers {num_producers}")
+        self.__log.info(f"Consumer {consumer_id}, throughput(Gbps) {throughput_in_gbps}, num_producers {num_producers}")
 
         # discard the data if the producer count doesn't match what we are expecting
         if self.desired_producer_count != num_producers:
@@ -70,20 +71,20 @@ class ThroughputProcess(BaseProcess):
             # since otherwise each consumer may not have stabilised
             if self.throughput_count > (2 * self.configuration["num_consumers"]):
                 # append throughput to specific list (as keyed by num_producers)
-                self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+                self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput_in_gbps)
 
                 # update min/max, etc.
-                if throughput < self.min_throughput:
-                    self.min_throughput = throughput
+                if throughput_in_gbps < self.min_throughput:
+                    self.min_throughput = throughput_in_gbps
 
-                if throughput > self.max_throughput:
-                    self.max_throughput = throughput
+                if throughput_in_gbps > self.max_throughput:
+                    self.max_throughput = throughput_in_gbps
             else:
                 self.__log.info("Discarding throughput value...")
                 self.throughput_count += 1
         else:
             # append throughput to specific list (as keyed by num_producers)
-            self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput)
+            self.consumer_throughput_dict[consumer_id][str(num_producers)].append(throughput_in_gbps)
 
         if not self.configuration["ignore_throughput_threshold"]:
             # detect threshold event if relevant to actual producer count
@@ -94,9 +95,9 @@ class ThroughputProcess(BaseProcess):
                 # calculate the mean
                 consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)])
                 self.__log.info(
-                    f"Consumer {consumer_id}, throughput (average) = {consumer_throughput_average}, expected {DEFAULT_THROUGHPUT_MB_S * num_producers}")
+                    f"Consumer {consumer_id}, throughput (Gbps, average) = {consumer_throughput_average}, expected throughput (Gbps) {SEVENTY_FIVE_MBPS_IN_GBPS * num_producers}")
 
-                consumer_throughput_tolerance = (DEFAULT_THROUGHPUT_MB_S * num_producers * DEFAULT_CONSUMER_TOLERANCE)
+                consumer_throughput_tolerance = (SEVENTY_FIVE_MBPS_IN_GBPS * num_producers * DEFAULT_CONSUMER_TOLERANCE)
 
                 if consumer_throughput_average < consumer_throughput_tolerance:
                     return self.throughput_tolerance_exceeded(consumer_id, consumer_throughput_average, consumer_throughput_tolerance)
