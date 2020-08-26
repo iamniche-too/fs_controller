@@ -58,7 +58,7 @@ class ThroughputProcess(BaseProcess):
         # i.e. if a new producer has just started
         self.reset_thresholds(consumer_id)
 
-        self.__log.info(f"Consumer {consumer_id}, throughput(Gbps) {throughput_in_gbps}, num_producers {num_producers}")
+        self.__log.info(f"Consumer {consumer_id}, throughput(Gbps) {throughput_in_gbps}, expected {SEVENTY_FIVE_MBPS_IN_GBPS * num_producers}, num_producers {num_producers}")
 
         # discard the data if the producer count doesn't match what we are expecting
         if self.desired_producer_count != num_producers:

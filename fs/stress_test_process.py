@@ -43,7 +43,7 @@ class StressTestProcess(ThroughputProcess):
         # above threshold, reset the threshold events
         # (as they must be consecutive to stop the thread)
         self.__log.info(
-            f"Consumer {consumer_id} average throughput ok, expected {DEFAULT_THROUGHPUT_MB_S * actual_producer_count}")
+            f"Consumer {consumer_id} average throughput ok, expected {SEVENTY_FIVE_MBPS_IN_GBPS * actual_producer_count}")
         self.threshold_exceeded[consumer_id] = 0
 
         # if interval has elapsed, then start a new producer
