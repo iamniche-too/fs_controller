@@ -93,6 +93,8 @@ class Controller:
 
         sequence_number = 1
         for configuration in self.configurations:
+            now_ms = time.time()
+
             self.__log.info(f"Configuration {sequence_number} of {len(self.configurations)}: {configuration}")
 
             # add the sequence number to the configuration
@@ -113,6 +115,13 @@ class Controller:
             # reset the stop threads flag
             global stop_threads
             stop_threads = False
+
+            then_ms = time.time()
+            elapsed_ms = then_ms - now_ms
+            elapsed_s = elapsed_ms / 1000
+            self.__log.info(f"Last configuration took {elapsed_s}s to complete.")
+            estimated_time_until_completion_hours = elapsed_s * (len(self.configurations) - sequence_number) / (60*60)
+            self.__log.info(f"Estimated time until completion: {estimated_time_until_completion_hours} hours.")
 
             sequence_number += 1
 
