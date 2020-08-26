@@ -30,13 +30,13 @@ class PartitionCountController(Controller):
         self.configurations.extend(self.get_configurations(template, broker_count))
 
         # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 5,
+        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 3,
              "start_producer_count": (broker_count * 2) - 1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template, broker_count))
 
         # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 10,
+        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 6,
              "start_producer_count": (broker_count * 2) - 1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template, broker_count))
