@@ -54,6 +54,28 @@ pipenv install --dev
 ./run.sh
 ```
 
+# Configuring the number of Kafka brokers
+1) Edit the controller.py configuration template, key "number_of_brokers": 5, "num_zk": 3
+2) If broker # > 7, configure the kafka services in fs-kafka-k8s (by default there are 7 internal services)
+3) Configure zookeeper in kafka config (/fs-kafka-k8s/kafka/kafka-config.yaml)
+E.g.
+zookeeper.connect=zookeeper-0.zookeeper-service.kafka.svc.cluster.local:2181,zookeeper-1.zookeeper-service.kafka.svc.cluster.local:2181,zookeeper-2.zookeeper-service.kafka.svc.cluster.local:2181
+
+3) Configure zookeeper in zookeeper config (fs-kafka-k8s/zookeeper-3.14.14/zookeeper-config.yaml)
+E.g.
+server.0=zookeeper-0.zookeeper-service.kafka.svc.cluster.local:2888:3888:participant
+server.1=zookeeper-1.zookeeper-service.kafka.svc.cluster.local:2888:3888:participant
+server.2=zookeeper-2.zookeeper-service.kafka.svc.cluster.local:2888:3888:participant
+
+4) Configure Burrow in fs-burrow-k8s/burrow-config.yaml
+E.g.
+servers=[ "zookeeper-0.zookeeper-service:2181", "zookeeper-1.zookeeper-service:2181", "zookeeper-2.zookeeper-service:2181" ]
+and
+servers=[ "kafka-0.kafka-service:9092", "kafka-1.kafka-service:9092", "kafka-2.kafka-service:9092", "kafka-3.kafka-service:9092", "kafka-4.kafka-service:9092"]
+ 
+5) Push the code and check out on fsserver
+6) Run it up! ;) 
+
 # Aggregate the results
 
 1) Sync the GCP bucket (to /log directory) to ensure that all data is present and correct
