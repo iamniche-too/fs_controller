@@ -32,11 +32,13 @@ class ThroughputProcess(BaseProcess):
     def throughput_tolerance_exceeded(self, consumer_id, consumer_throughput_average, consumer_throughput_tolerance):
         raise NotImplementedError("Please use a sub-class to implement the method.")
 
-    def reset_thresholds(self, consumer_id):
+    def reset_thresholds(self):
         actual_producer_count = self.get_producer_count()
         if self.previous_producer_count != actual_producer_count:
             self.__log.info(f"Producer change detected: previous {self.previous_producer_count}, current {actual_producer_count} - resetting thresholds.")
-            self.threshold_exceeded[consumer_id] = 0
+
+            # reset ALL thresholds to zero
+            self.threshold_exceeded = dict.fromkeys(self.threshold_exceeded.keys(), 0)
 
             # discard the initial values for this producer #
             self.throughput_count = 0
@@ -56,9 +58,9 @@ class ThroughputProcess(BaseProcess):
 
         # reset thresholds only if the producer count has changed
         # i.e. if a new producer has just started
-        self.reset_thresholds(consumer_id)
+        self.reset_thresholds()
 
-        self.__log.info(f"Consumer {consumer_id}, throughput(Gbps) {throughput_in_gbps}, expected {SEVENTY_FIVE_MBPS_IN_GBPS * num_producers}, num_producers {num_producers}")
+        self.__log.info(f"Consumer {consumer_id}, throughput {throughput_in_gbps} Gbps, expected {SEVENTY_FIVE_MBPS_IN_GBPS * num_producers} Gbps, num_producers {num_producers}")
 
         # discard the data if the producer count doesn't match what we are expecting
         if self.desired_producer_count != num_producers:
@@ -94,6 +96,8 @@ class ThroughputProcess(BaseProcess):
 
                 # calculate the mean
                 consumer_throughput_average = mean(self.consumer_throughput_dict[consumer_id][str(num_producers)])
+
+                # TODO - think about adding a theoretical maximum based on the setup e.g. NVMe SSD = 350MB/s
                 self.__log.info(
                     f"Consumer {consumer_id}, throughput (Gbps, average) = {consumer_throughput_average}, expected throughput (Gbps) {SEVENTY_FIVE_MBPS_IN_GBPS * num_producers}")
 

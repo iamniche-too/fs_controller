@@ -22,7 +22,7 @@ DEFAULT_THROUGHPUT_MB_S = 75
 SEVENTY_FIVE_MBPS_IN_GBPS = 0.6
 
 # TODO - use a static Service Account rather than create one each time we provision the infra
-SERVICE_ACCOUNT_EMAIL = "cluster-minimal-192e6e7b8ead@kafka-k8s-trial.iam.gserviceaccount.com"
+SERVICE_ACCOUNT_EMAIL = "cluster-minimal-67c86c4bea91@kafka-k8s-trial.iam.gserviceaccount.com"
 
 CLUSTER_NAME = "gke-kafka-cluster"
 CLUSTER_ZONE = "europe-west2-a"

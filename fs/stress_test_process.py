@@ -40,8 +40,8 @@ class StressTestProcess(ThroughputProcess):
         return False
 
     def throughput_ok(self, consumer_id, actual_producer_count):
-        # above threshold, reset the threshold events
-        # (as they must be consecutive to stop the thread)
+        # above threshold, reset the threshold events for this consumer (only)
+        # As events must be consecutive to stop the thread
         self.__log.info(
             f"Consumer {consumer_id} average throughput ok, expected {SEVENTY_FIVE_MBPS_IN_GBPS * actual_producer_count}")
         self.threshold_exceeded[consumer_id] = 0

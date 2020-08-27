@@ -37,8 +37,8 @@ class SoakTestProcess(ThroughputProcess):
         else:
             self.__log.info("Producer count is zero.")
 
-    def reset_thresholds(self, consumer_id):
-        actual_producer_count = super().reset_thresholds(consumer_id)
+    def reset_thresholds(self):
+        actual_producer_count = super().reset_thresholds()
 
         # if producer count has changed i.e. been reduced, then update the desired count
         if self.desired_producer_count > actual_producer_count:
