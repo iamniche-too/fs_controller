@@ -25,19 +25,24 @@ class MessageSizeController(Controller):
         broker_count = self.configuration_template["number_of_brokers"]
 
         # override the message size
-        d = {"run_uid": self.run_uid, "message_size_kb": 75, "start_producer_count": (broker_count*2)-1}
+        # d = {"run_uid": self.run_uid, "message_size_kb": 75, "start_producer_count": (broker_count*2)-1}
+        # template = dict(self.configuration_template, **d)
+        # self.configurations.extend(self.get_configurations(template, broker_count))
+
+        # override the message size
+        # d = {"run_uid": self.run_uid, "message_size_kb": 750, "start_producer_count": (broker_count*2)-1}
+        # template = dict(self.configuration_template, **d)
+        # self.configurations.extend(self.get_configurations(template, broker_count))
+
+        # override the message size
+        d = {"run_uid": self.run_uid, "message_size_kb": 3750, "start_producer_count": (broker_count * 2) - 1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template, broker_count))
 
         # override the message size
-        d = {"run_uid": self.run_uid, "message_size_kb": 750, "start_producer_count": (broker_count*2)-1}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count))
-
-        # override the message size
-        d = {"run_uid": self.run_uid, "message_size_kb": 7500, "start_producer_count": (broker_count*2)-1}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count))
+        # d = {"run_uid": self.run_uid, "message_size_kb": 7500, "start_producer_count": (broker_count*2)-1}
+        # template = dict(self.configuration_template, **d)
+        # self.configurations.extend(self.get_configurations(template, broker_count))
 
     def get_soak_test_process(self, configuration, queue):
         """

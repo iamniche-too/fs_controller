@@ -55,6 +55,11 @@ pipenv install --dev
 ```
 
 # Configuring the number of Kafka brokers
+
+NB - ensure the producer and consumer node pools can scale accordingly
+
+e.g. 5 brokers supporting 4.66 producers per node = 23 producer nodes
+
 1) Edit the controller.py configuration template, key "number_of_brokers": 5, "num_zk": 3
 2) If broker # > 7, configure the kafka services in fs-kafka-k8s (by default there are 7 internal services)
 3) Configure zookeeper in kafka config (/fs-kafka-k8s/kafka/kafka-config.yaml)
