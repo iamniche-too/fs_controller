@@ -533,9 +533,14 @@ class Controller:
         configurations = []
 
         # zero offset
-        for num_consumers in range(1, broker_count*3, broker_count):
-            d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
-            configurations.append(dict(template, **d))
+        # for num_consumers in range(1, broker_count*5, broker_count):
+        #    d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
+        #    configurations.append(dict(template, **d))
+
+        # specific test with 3 consumers
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(),
+             "num_consumers": 3}
+        configurations.append(dict(template, **d))
 
         return configurations
 

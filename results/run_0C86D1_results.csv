@@ -1,0 +1,3 @@
+run_uid,configuration_uid,stress_max_producers,stress_expected_throughput_gbps,stress_min_throughput,stress_max_throughput,num_consumers,message_size_kb,soak_num_producers,soak_expected_throughput_gbps,soak_min_throughput,soak_max_throughput,soak_average_throughput
+run_0C86D1,398162,16,9.6,5.223129534399945,8.604198132000182,6,3750,13,7.8,7.2067746327999345,7.890786990400051,7.645602426300551
+run_0C86D1,002990,14,8.4,5.097196885599993,7.485252411200015,11,3750,11,6.6,5.816629009279945,6.837239360479913,6.445171865984103

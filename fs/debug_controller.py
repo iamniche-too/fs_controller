@@ -43,7 +43,7 @@ class DebugController(Controller):
 
         broker_count = self.configuration_template["number_of_brokers"]
         
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "run_uid": self.run_uid, "start_producer_count": (broker_count*2)-1, "num_consumers": 3}
+        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "run_uid": self.run_uid, "start_producer_count": 16, "num_consumers": 3}
         template = dict(self.configuration_template, **d)
 
         configurations = [template]
