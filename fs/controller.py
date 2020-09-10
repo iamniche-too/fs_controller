@@ -15,6 +15,7 @@ from fs.utils import SCRIPT_DIR, PRODUCER_CONSUMER_NAMESPACE, KAFKA_NAMESPACE, K
     ENDPOINT_URL, addlogger, MONITORING_DIR, LOCAL_PROVISIONER_DEPLOY_DIR
 
 stop_threads = False
+DEFAULT_BATCH_SIZE = 1000000
 
 
 @addlogger
@@ -34,7 +35,7 @@ class Controller:
                                        "num_consumers": 1, "producer_increment_interval_sec": 60,
                                        "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd",
                                        "ignore_throughput_threshold": False, "teardown_broker_nodes": True,
-                                       "replication_factor": 1, "num_zk": 3}
+                                       "replication_factor": 1, "num_zk": 3, "batch_size_kb": DEFAULT_BATCH_SIZE}
 
         # TODO - this needs more thought as MAX(#Consumers,#Producers) may be > brokers * 3
         # default the number of partitions
@@ -192,7 +193,7 @@ class Controller:
         args = [filename, str(num_zk)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
-    def k8s_deploy_kafka(self, num_partitions, replication_factor):
+    def k8s_deploy_kafka(self, num_partitions, replication_factor, batch_size_kb):
         """
         # run a script to deploy kafka
 
@@ -200,9 +201,9 @@ class Controller:
         :param replication_factor:
         :return:
         """
-        self.__log.info(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}...")
+        self.__log.info(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}, batch size {batch_size_kb}...")
         filename = "./deploy-kafka.sh"
-        args = [filename, str(num_partitions), str(replication_factor)]
+        args = [filename, str(num_partitions), str(replication_factor), str(batch_size_kb)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     def get_burrow_ip(self):
@@ -400,7 +401,8 @@ class Controller:
         # see https://docs.cloudera.com/runtime/7.1.0/kafka-performance-tuning/topics/kafka-tune-sizing-partition-number.html
         num_partitions = configuration["number_of_partitions"]
         replication_factor = configuration["replication_factor"]
-        self.k8s_deploy_kafka(num_partitions, replication_factor)
+        batch_size_kb = configuration["batch_size_kb"]
+        self.k8s_deploy_kafka(num_partitions, replication_factor, batch_size_kb)
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))

@@ -9,35 +9,38 @@ from fs.utils import addlogger
 
 
 @addlogger
-class PartitionCountController(Controller):
+class BatchSizeController(Controller):
 
     def get_configuration_description(self):
-        return "Testing partition counts"
+        return "Testing batch sizes"
 
     def load_configurations(self):
         """
-        Configurations pertaining to changing partition count
+        Configurations pertaining to batch sizes
+
         :return:
         """
-        self.__log.info("Loading partition count configurations...")
+        self.__log.info("Loading batch size configurations.")
 
         broker_count = self.configuration_template["number_of_brokers"]
 
-        # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 1,
-             "start_producer_count": (broker_count * 2) - 1}
+        # override the batch size
+        d = {"run_uid": self.run_uid, "batch_size_kb": 768000, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template, broker_count))
 
-        # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 3,
-             "start_producer_count": (broker_count * 2) - 1}
+        # use default batch size
+        d = {"run_uid": self.run_uid, "start_producer_count": (broker_count*2)-1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template, broker_count))
 
-        # override the partition count
-        d = {"run_uid": self.run_uid, "number_of_partitions": broker_count * 6,
-             "start_producer_count": (broker_count * 2) - 1}
+        # override the batch size
+        d = {"run_uid": self.run_uid, "batch_size_kb": 7680000, "start_producer_count": (broker_count*2)-1}
+        template = dict(self.configuration_template, **d)
+        self.configurations.extend(self.get_configurations(template, broker_count))
+
+        # override the batch size
+        d = {"run_uid": self.run_uid, "batch_size_kb": 7680000*2, "start_producer_count": (broker_count * 2) - 1}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template, broker_count))
 
@@ -64,24 +67,24 @@ class PartitionCountController(Controller):
 class SoakTestProcess2(SoakTestProcess):
     def get_metrics_features(self):
         """
-        Return metrics features of interest
+        Overridden implementation
         :return:
         """
-        return ["num_consumers", "number_of_partitions"]
+        return ["num_consumers", "batch_size_kb"]
 
 
 class StressTestProcess2(StressTestProcess):
     def get_metrics_features(self):
         """
-        Return metrics features of interest
+        Overridden implementation
         :return:
         """
-        return ["num_consumers", "number_of_partitions"]
+        return ["num_consumers", "batch_size_kb"]
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
     consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
-    c = PartitionCountController(consumer_throughput_queue)
+    c = BatchSizeController(consumer_throughput_queue)
     c.flush_consumer_throughput_queue()
     c.run()

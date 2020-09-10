@@ -1,7 +1,8 @@
 import argparse
 import greenstalk
+
+from fs.batch_size_controller import BatchSizeController
 from fs.debug_controller import DebugController
-from fs.message_size_controller import MessageSizeController
 from fs.partition_count_controller import PartitionCountController
 from fs.replication_factor_controller import ReplicationFactorController
 
@@ -10,7 +11,7 @@ def run():
     parser = argparse.ArgumentParser(description='FS Kafka Trial Controller')
     parser.add_argument('--controller',
                         type=str,
-                        help="The controller to run. Default=DefaultController",
+                        help="The controller to run. Default=DebugController",
                         required=False
                         )
     args = parser.parse_args()
@@ -20,8 +21,8 @@ def run():
     if args.controller is None:
         print("Running all Controllers consecutively...")
 
-        print("1. Starting Message Size Controller")
-        c = MessageSizeController(consumer_throughput_queue)
+        print("1. Starting Batch Size Controller")
+        c = BatchSizeController(consumer_throughput_queue)
         c.flush_consumer_throughput_queue()
         c.run()
 
@@ -36,9 +37,9 @@ def run():
         c.run()
 
         return
-    elif args.controller == "message-size":
-        print("Starting Message Size Controller")
-        c = MessageSizeController(consumer_throughput_queue)
+    elif args.controller == "batch-size":
+        print("Starting Batch Size Controller")
+        c = BatchSizeController(consumer_throughput_queue)
         c.flush_consumer_throughput_queue()
         c.run()
         return
