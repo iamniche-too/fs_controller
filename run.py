@@ -2,6 +2,7 @@ import argparse
 import greenstalk
 
 from fs.batch_size_controller import BatchSizeController
+from fs.consumer_controller import ConsumerController
 from fs.debug_controller import DebugController
 from fs.partition_count_controller import PartitionCountController
 from fs.replication_factor_controller import ReplicationFactorController
@@ -18,28 +19,15 @@ def run():
 
     consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
 
-    if args.controller is None:
-        print("Running all Controllers consecutively...")
-
-        print("1. Starting Batch Size Controller")
-        c = BatchSizeController(consumer_throughput_queue)
-        c.flush_consumer_throughput_queue()
-        c.run()
-
-        print("2. Starting Partition Count Controller")
-        c = PartitionCountController(consumer_throughput_queue)
-        c.flush_consumer_throughput_queue()
-        c.run()
-
-        print("3. Starting Replication Factor Controller")
-        c = ReplicationFactorController(consumer_throughput_queue)
-        c.flush_consumer_throughput_queue()
-        c.run()
-
-        return
-    elif args.controller == "batch-size":
+    if args.controller == "batch-size":
         print("Starting Batch Size Controller")
         c = BatchSizeController(consumer_throughput_queue)
+        c.flush_consumer_throughput_queue()
+        c.run()
+        return
+    elif args.controller == "consumer":
+        print("Starting Consumer Controller")
+        c = ConsumerController(consumer_throughput_queue)
         c.flush_consumer_throughput_queue()
         c.run()
         return

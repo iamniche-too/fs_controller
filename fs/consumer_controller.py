@@ -9,38 +9,21 @@ from fs.utils import addlogger
 
 
 @addlogger
-class BatchSizeController(Controller):
+class ConsumerController(Controller):
 
     def get_configuration_description(self):
-        return "Testing batch sizes"
+        return "Testing with variable # consumers."
 
     def load_configurations(self):
         """
-        Configurations pertaining to batch sizes
-
+        Configurations pertaining to changing partition count
         :return:
         """
-        self.__log.info("Loading batch size configurations.")
+        self.__log.info("Loading variable consumer configurations...")
 
         broker_count = self.configuration_template["number_of_brokers"]
 
-        # override the batch size
-        d = {"run_uid": self.run_uid, "batch_size_bytes": 768000, "start_producer_count": (broker_count*2)-1}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count))
-
-        # use default batch size
-        d = {"run_uid": self.run_uid, "start_producer_count": (broker_count*2)-1}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count))
-
-        # override the batch size
-        d = {"run_uid": self.run_uid, "batch_size_bytes": 7680000, "start_producer_count": (broker_count*2)-1}
-        template = dict(self.configuration_template, **d)
-        self.configurations.extend(self.get_configurations(template, broker_count))
-
-        # override the batch size
-        d = {"run_uid": self.run_uid, "batch_size_bytes": 7680000*2, "start_producer_count": (broker_count * 2) - 1}
+        d = {"run_uid": self.run_uid}
         template = dict(self.configuration_template, **d)
         self.configurations.extend(self.get_configurations(template, broker_count))
 
@@ -67,24 +50,24 @@ class BatchSizeController(Controller):
 class SoakTestProcess2(SoakTestProcess):
     def get_metrics_features(self):
         """
-        Overridden implementation
+        Return metrics features of interest
         :return:
         """
-        return ["num_consumers", "batch_size_kb"]
+        return ["num_consumers", "number_of_partitions"]
 
 
 class StressTestProcess2(StressTestProcess):
     def get_metrics_features(self):
         """
-        Overridden implementation
+        Return metrics features of interest
         :return:
         """
-        return ["num_consumers", "batch_size_kb"]
+        return ["num_consumers", "number_of_partitions"]
 
 
 # GOOGLE_APPLICATION_CREDENTIALS=./kafka-k8s-trial-4287e941a38f.json
 if __name__ == '__main__':
     consumer_throughput_queue = greenstalk.Client(host='127.0.0.1', port=12000, watch='consumer_throughput')
-    c = BatchSizeController(consumer_throughput_queue)
+    c = ConsumerController(consumer_throughput_queue)
     c.flush_consumer_throughput_queue()
     c.run()

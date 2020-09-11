@@ -5,7 +5,7 @@ import os
 from fs.read_write_jsonl_mixin import ReadWriteJSONLMixin
 
 # TODO - think about this a bit more: move to command line parameter or remove?
-INCLUDED_RUN_UIDS = ["627F9E"]
+INCLUDED_RUN_UIDS = ["D95F23"]
 
 
 class AggregateStats(ReadWriteJSONLMixin):

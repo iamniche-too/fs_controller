@@ -15,7 +15,12 @@ from fs.utils import SCRIPT_DIR, PRODUCER_CONSUMER_NAMESPACE, KAFKA_NAMESPACE, K
     ENDPOINT_URL, addlogger, MONITORING_DIR, LOCAL_PROVISIONER_DEPLOY_DIR
 
 stop_threads = False
-DEFAULT_BATCH_SIZE = 1000000
+
+DEFAULT_BATCH_SIZE_BYTES = 7680000
+DEFAULT_MESSAGE_SIZE_KB = 750
+
+# see fs-terraform/gcp/consumer-node-pool.tf
+CONSUMER_NODE_POOL_MAX = 18
 
 
 @addlogger
@@ -30,20 +35,12 @@ class Controller:
         self.soak_test_process = None
 
         # template configuration
-        # 5 brokers, 3 ZK
-        self.configuration_template = {"number_of_brokers": 5, "start_producer_count": 1, "max_producer_count": 26,
+        self.configuration_template = {"number_of_brokers": 3, "start_producer_count": 1, "max_producer_count": 26,
                                        "num_consumers": 1, "producer_increment_interval_sec": 60,
                                        "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd",
                                        "ignore_throughput_threshold": False, "teardown_broker_nodes": True,
-                                       "replication_factor": 1, "num_zk": 3, "batch_size_kb": DEFAULT_BATCH_SIZE}
-
-        # TODO - this needs more thought as MAX(#Consumers,#Producers) may be > brokers * 3
-        # default the number of partitions
-        self.configuration_template["number_of_partitions"] = self.configuration_template["number_of_brokers"] * 3
-
-        # TODO - this needs more thought as may not be the optimal message size
-        # default message size
-        self.configuration_template["message_size_kb"] = 750
+                                       "replication_factor": 1, "num_zk": 1, "batch_size_bytes": DEFAULT_BATCH_SIZE_BYTES,
+                                       "message_size_kb": DEFAULT_MESSAGE_SIZE_KB}
 
         self.run_uid = "run_" + self.get_uid()
         self.configure_logging()
@@ -193,7 +190,7 @@ class Controller:
         args = [filename, str(num_zk)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
-    def k8s_deploy_kafka(self, num_partitions, replication_factor, batch_size_kb):
+    def k8s_deploy_kafka(self, num_partitions, replication_factor, batch_size_bytes):
         """
         # run a script to deploy kafka
 
@@ -201,9 +198,9 @@ class Controller:
         :param replication_factor:
         :return:
         """
-        self.__log.info(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}, batch size {batch_size_kb}...")
+        self.__log.info(f"Deploying Kafka with {num_partitions} partitions, replication factor {replication_factor}, batch size {batch_size_bytes}...")
         filename = "./deploy-kafka.sh"
-        args = [filename, str(num_partitions), str(replication_factor), str(batch_size_kb)]
+        args = [filename, str(num_partitions), str(replication_factor), str(batch_size_bytes)]
         self.bash_command_with_wait(args, KAFKA_DEPLOY_DIR)
 
     def get_burrow_ip(self):
@@ -401,8 +398,8 @@ class Controller:
         # see https://docs.cloudera.com/runtime/7.1.0/kafka-performance-tuning/topics/kafka-tune-sizing-partition-number.html
         num_partitions = configuration["number_of_partitions"]
         replication_factor = configuration["replication_factor"]
-        batch_size_kb = configuration["batch_size_kb"]
-        self.k8s_deploy_kafka(num_partitions, replication_factor, batch_size_kb)
+        batch_size_bytes = configuration["batch_size_bytes"]
+        self.k8s_deploy_kafka(num_partitions, replication_factor, batch_size_bytes)
 
         # Configure # kafka brokers
         self.k8s_scale_brokers(str(configuration["number_of_brokers"]))
@@ -535,14 +532,17 @@ class Controller:
         configurations = []
 
         # zero offset
-        # for num_consumers in range(1, broker_count*5, broker_count):
-        #    d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
-        #    configurations.append(dict(template, **d))
+        for num_consumers in range(1, CONSUMER_NODE_POOL_MAX, 3):
+            d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
 
-        # specific test with 3 consumers
-        d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(),
-             "num_consumers": 3}
-        configurations.append(dict(template, **d))
+            # set the number of partitions appropriately
+            # theoretical maximum number of producers depends on consumer node size
+            # TODO - need to change this if broker_count <> 3
+            # for n1-standard-2 (10Gbps) = 17 producers (but where 18 % 3 (broker_count) = 0)
+            num_partitions = 18
+            d["number_of_partitions"] = num_partitions
+
+            configurations.append(dict(template, **d))
 
         return configurations
 
