@@ -532,16 +532,12 @@ class Controller:
         configurations = []
 
         # zero offset
-        for num_consumers in range(1, CONSUMER_NODE_POOL_MAX, 3):
-            d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(), "num_consumers": num_consumers}
+        for num_consumers in range(0, CONSUMER_NODE_POOL_MAX, 3):
+            if num_consumers == 0:
+                num_consumers = 1
 
-            # set the number of partitions appropriately
-            # theoretical maximum number of producers depends on consumer node size
-            # TODO - need to change this if broker_count <> 3
-            # for n1-standard-2 (10Gbps) = 17 producers (but where 18 % 3 (broker_count) = 0)
-            num_partitions = 18
-            d["number_of_partitions"] = num_partitions
-
+            d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(),
+                 "num_consumers": num_consumers, "number_of_partitions": 18}
             configurations.append(dict(template, **d))
 
         return configurations
