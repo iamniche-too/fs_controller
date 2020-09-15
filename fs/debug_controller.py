@@ -27,7 +27,7 @@ class DebugController(Controller):
         i.e. we can pause with Kafka brokers running at this point
         :return:
         """
-        # input("Press any key to continue...")
+        input("Press any key to continue...")
         pass
 
     def get_configuration_description(self):

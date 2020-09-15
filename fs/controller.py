@@ -3,6 +3,7 @@ import subprocess
 import time
 import os
 from datetime import datetime
+from math import ceil
 
 import greenstalk
 import requests
@@ -37,7 +38,8 @@ class Controller:
         # template configuration
         self.configuration_template = {"number_of_brokers": 3, "start_producer_count": 1, "max_producer_count": 26,
                                        "num_consumers": 1, "producer_increment_interval_sec": 60,
-                                       "machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd",
+                                       "consumer_machine_type": "n1-standard-2",
+                                       "broker_machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd",
                                        "ignore_throughput_threshold": False, "teardown_broker_nodes": True,
                                        "replication_factor": 1, "num_zk": 1, "batch_size_bytes": DEFAULT_BATCH_SIZE_BYTES,
                                        "message_size_kb": DEFAULT_MESSAGE_SIZE_KB}
@@ -528,6 +530,21 @@ class Controller:
     def get_configuration_description(self):
         raise NotImplementedError("Please use a sub-class to implement the configuration description")
 
+    def round_up(self, x, multiple):
+        return int(ceil(x / multiple)) * multiple
+
+    def get_number_partitions(self, broker_count, num_consumers):
+        # return max(P,C), where P=producer max and C=consumer max
+        # note - this is a best estimate based on past experience
+        p_max = ceil(broker_count * 4.66)
+        c_max = num_consumers
+
+        # round up to nearest broker_count
+        max_p_c = max(p_max, c_max)
+        partitions = self.round_up(max_p_c, broker_count)
+
+        return partitions
+
     def get_configurations(self, template, broker_count):
         configurations = []
 
@@ -537,7 +554,13 @@ class Controller:
                 num_consumers = 1
 
             d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(),
-                 "num_consumers": num_consumers, "number_of_partitions": 18}
+                 "num_consumers": num_consumers, "number_of_partitions": 15}
+
+            start_producer_count = {1: 13, 3: 10, 6: 9, 9: 6, 12: 3, 15: 1}
+            d["start_producer_count"] = start_producer_count[num_consumers]
+
+            # d["number_of_partitions"] = self.get_number_partitions(broker_count, num_consumers)
+
             configurations.append(dict(template, **d))
 
         return configurations
@@ -605,7 +628,7 @@ class Controller:
 
         gcloud_parameters = {"cluster": cluster, "num-nodes": configuration["number_of_brokers"],
                              "disk-size": configuration["disk_size"], "disk-type": configuration["disk_type"],
-                             "machine-type": configuration["machine_type"], "max-nodes": 7,
+                             "machine-type": configuration["broker_machine_type"], "max-nodes": 7,
                              "min-nodes": 3, "node-labels": "kafka-broker-node=true", "tags": "kafka-broker-node",
                              "service-account": SERVICE_ACCOUNT_EMAIL}
 
