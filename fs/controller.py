@@ -38,7 +38,7 @@ class Controller:
         # template configuration
         self.configuration_template = {"number_of_brokers": 3, "start_producer_count": 1, "max_producer_count": 26,
                                        "num_consumers": 1, "producer_increment_interval_sec": 60,
-                                       "consumer_machine_type": "n1-standard-2",
+                                       "consumer_machine_type": "n1-standard-2", "number_of_partitions": 18,
                                        "broker_machine_type": "n1-standard-8", "disk_size": 100, "disk_type": "pd-ssd",
                                        "ignore_throughput_threshold": False, "teardown_broker_nodes": True,
                                        "replication_factor": 1, "num_zk": 1, "batch_size_bytes": DEFAULT_BATCH_SIZE_BYTES,
@@ -554,7 +554,7 @@ class Controller:
                 num_consumers = 1
 
             d = {"configuration_uid": self.get_uid(), "description": self.get_configuration_description(),
-                 "num_consumers": num_consumers, "number_of_partitions": 15}
+                 "num_consumers": num_consumers}
 
             start_producer_count = {1: 13, 3: 10, 6: 9, 9: 6, 12: 3, 15: 1}
             d["start_producer_count"] = start_producer_count[num_consumers]
